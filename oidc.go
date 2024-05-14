@@ -1,4 +1,4 @@
-package main
+package oidc
 
 import (
 	"context"
@@ -22,10 +22,12 @@ type callbackEndpoint struct {
 
 func (h *callbackEndpoint) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
+	fmt.Fprintf(os.Stderr, "callback URL %s\n", r.URL.String())
+
 	code := r.URL.Query().Get("code")
 	if code != "" {
 		h.code = code
-		fmt.Fprintln(w, "Login is successful, You may close the browser and goto commandline")
+		fmt.Fprintln(w, "Login is successful, You may close the browser and return to the commandline")
 	} else {
 		fmt.Fprintln(w, "Login is not successful, You may close the browser and try again")
 	}
