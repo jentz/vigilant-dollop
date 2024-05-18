@@ -23,4 +23,7 @@ go.work
 .idea
 
 # the executable
-vigilant-dollop*
+oidc-cli*
+
+# goreleaser dist directory
+dist/
