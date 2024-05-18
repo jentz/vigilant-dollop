@@ -11,7 +11,7 @@ func main() {
 
 	const callbackURL = "http://localhost:9555/callback"
 	flag.Usage = func() {
-		fmt.Println("Usage: vigilant-dollop \n" +
+		fmt.Println("Usage: oidc-cli\n" +
 			"       setup an openid client with the callback url : " + callbackURL + " and set below flags to get a token response\n" +
 			"Flags:\n" +
 			"      --authorization-url	authorization URL. Default value is https://localhost:9443/oauth2/authorize.\n" +
