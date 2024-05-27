@@ -41,3 +41,13 @@ changelog:
     exclude:
       - "^docs:"
       - "^test:"
+
+brews:
+  - name: oidc-cli
+    description: Command-line OIDC client, get a token without all the fuss
+    homepage: https://github.com/jentz/vigilant-dollop
+    license: MIT
+    directory: Formula
+    repository:
+      owner: jentz
+      name: homebrew-vigilant-dollop
