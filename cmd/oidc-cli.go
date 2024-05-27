@@ -19,7 +19,8 @@ func main() {
 			"      --authorization-url	authorization URL. Default value is https://localhost:9443/oauth2/authorize.\n" +
 			"      --token-url        	token URL. Default value is https://localhost:9443/oauth2/token\n" +
 			"      --client-id       	client ID.\n" +
-			"      --client-secret    	client secret.")
+			"      --client-secret    	client secret.\n" +
+			"      --scopes             scopes.")
 	}
 
 	var discoveryEndpoint = flag.String("discovery-url", "", "OpenID discovery endpoint");
@@ -27,6 +28,7 @@ func main() {
 	var tokenEndpoint = flag.String("token-url", "https://localhost:9443/oauth2/token", "OAuth2 token URL")
 	var clientID = flag.String("client-id", "client", "OAuth2 client ID")
 	var clientSecret = flag.String("client-secret", "clientSecret", "OAuth2 client secret")
+	var scopes = flag.String("scopes", "openid", "OAuth2 scopes")
 
 	flag.Parse()
 	if *clientID == "" {
@@ -34,5 +36,5 @@ func main() {
 	} else if *clientSecret == "" {
 		log.Fatal("clientID is required to run this command")
 	}
-	oidc.HandleOpenIDFlow(*clientID, *clientSecret, callbackURL, *discoveryEndpoint, *authorizationEndpoint, *tokenEndpoint)
+	oidc.HandleOpenIDFlow(*clientID, *clientSecret, *scopes, callbackURL, *discoveryEndpoint, *authorizationEndpoint, *tokenEndpoint)
 }

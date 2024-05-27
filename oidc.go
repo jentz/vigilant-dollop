@@ -34,7 +34,7 @@ func (h *callbackEndpoint) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	h.shutdownSignal <- "shutdown"
 }
 
-func HandleOpenIDFlow(clientID, clientSecret, callbackURL, discoveryEndpoint, authorizationEndpoint, tokenEndpoint string) {
+func HandleOpenIDFlow(clientID, clientSecret, scopes, callbackURL, discoveryEndpoint, authorizationEndpoint, tokenEndpoint string) {
 
 	callbackEndpoint := &callbackEndpoint{}
 	callbackEndpoint.shutdownSignal = make(chan string)
@@ -66,7 +66,7 @@ func HandleOpenIDFlow(clientID, clientSecret, callbackURL, discoveryEndpoint, au
 	query := authURL.Query()
 	query.Set("client_id", clientID)
 	query.Set("response_type", "code")
-	query.Set("scope", "openid")
+	query.Set("scope", scopes)
 	query.Set("redirect_uri", callbackURL)
 	authURL.RawQuery = query.Encode()
 
