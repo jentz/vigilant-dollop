@@ -12,6 +12,15 @@ Flags:
       --client-id               client ID.
       --client-secret           client secret.
 ```
+## Installing
+
+Installing with homebrew
+```bash
+ brew tap jentz/vigilant-dollop
+ brew install oidc-cli
+ ```
+
+You can also download a suitable release for your platform from the [releases page](https://github.com/jentz/vigilant-dollop/releases).
 
 ## Run
 
