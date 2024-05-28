@@ -34,7 +34,7 @@ func (h *callbackEndpoint) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	h.shutdownSignal <- "shutdown"
 }
 
-func HandleOpenIDFlow(clientID, clientSecret, callbackURL, authorizationEndpoint, tokenEndpoint string) {
+func HandleOpenIDFlow(clientID, clientSecret, scopes, callbackURL, discoveryEndpoint, authorizationEndpoint, tokenEndpoint string) {
 
 	callbackEndpoint := &callbackEndpoint{}
 	callbackEndpoint.shutdownSignal = make(chan string)
@@ -47,15 +47,26 @@ func HandleOpenIDFlow(clientID, clientSecret, callbackURL, authorizationEndpoint
 	}
 	callbackEndpoint.server = server
 	http.Handle("/callback", callbackEndpoint)
-	authURL, authURLParseError := url.Parse(authorizationEndpoint)
 
+	if discoveryEndpoint != "" {
+		resp, err := http.Get(discoveryEndpoint)
+		if err != nil {
+			log.Fatal(err)
+		}
+		var discoveryJson map[string]interface{}
+		json.NewDecoder(resp.Body).Decode(&discoveryJson)
+		authorizationEndpoint = discoveryJson["authorization_endpoint"].(string)
+		tokenEndpoint = discoveryJson["token_endpoint"].(string)
+	}
+
+	authURL, authURLParseError := url.Parse(authorizationEndpoint)
 	if authURLParseError != nil {
 		log.Fatal(authURLParseError)
 	}
 	query := authURL.Query()
 	query.Set("client_id", clientID)
 	query.Set("response_type", "code")
-	query.Set("scope", "openid")
+	query.Set("scope", scopes)
 	query.Set("redirect_uri", callbackURL)
 	authURL.RawQuery = query.Encode()
 
