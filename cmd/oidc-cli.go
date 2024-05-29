@@ -1,40 +1,101 @@
 package main
 
 import (
+	"errors"
 	"flag"
 	"fmt"
-	"log"
-
-	oidc "github.com/jentz/vigilant-dollop"
+	"os"
+	"slices"
 )
 
+type Command struct {
+	Name  string
+	Help  string
+	Parse func(name string, args []string) (config interface{}, output string, err error)
+	Run   func(config interface{}) error
+}
+
+var commands = []Command{
+	{Name: "authorization_code", Help: "Uses the authorization code flow to get a token response", Parse: parseAuthorizationCodeFlags, Run: authorizationCodeCmd},
+	{Name: "client_credentials", Help: "Uses the client credentials flow to get a token response", Run: clientCredentialsCmd},
+	{Name: "help", Help: "Prints help", Run: helpCmd},
+}
+
+func helpCmd(_ interface{}) error {
+	flag.Usage()
+	return nil
+}
+
+func clientCredentialsCmd(config interface{}) error {
+	return nil
+}
+
+func usage() {
+	intro := `oidc-cli is a command-line OIDC client, get a token without all the fuss
+
+Usage:
+  oidc-cli [flags] <command> [command-flags]`
+
+	fmt.Fprintln(os.Stderr, intro)
+	fmt.Fprintln(os.Stderr, "\nCommands:")
+	for _, cmd := range commands {
+		fmt.Fprintf(os.Stderr, "  %-18s: %s\n", cmd.Name, cmd.Help)
+	}
+
+	fmt.Fprintln(os.Stderr, "\nFlags:")
+	// Prints a help string for each flag we defined earlier using
+	// flag.BoolVar (and related functions)
+	flag.PrintDefaults()
+
+	fmt.Fprintln(os.Stderr)
+	fmt.Fprintf(os.Stderr, "Run `oidc-cli <command> -h` to get help for a specific command\n\n")
+}
+
+func runCommand(name string, args []string) {
+
+	cmdIdx := slices.IndexFunc(commands, func(cmd Command) bool {
+		return cmd.Name == name
+	})
+
+	if cmdIdx < 0 {
+		fmt.Fprintf(os.Stderr, "command \"%s\" not found\n\n", name)
+		flag.Usage()
+		os.Exit(1)
+	}
+
+	cmd := commands[cmdIdx]
+	if cmd.Name == "help" {
+		cmd.Run(nil)
+		return
+	}
+
+	config, output, err := cmd.Parse(name, args)
+	if errors.Is(err, flag.ErrHelp) {
+		fmt.Println(output)
+		os.Exit(2)
+	} else if err != nil {
+		fmt.Println("got error:", err)
+		fmt.Println("output:\n", output)
+		os.Exit(1)
+	}
+
+	if err := cmd.Run(config); err != nil {
+		fmt.Fprintf(os.Stderr, "error: %v", err.Error())
+		os.Exit(1)
+	}
+}
+
 func main() {
-
-	const callbackURL = "http://localhost:9555/callback"
-	flag.Usage = func() {
-		fmt.Println("Usage: oidc-cli\n" +
-			"       setup an openid client with the callback url : " + callbackURL + " and set below flags to get a token response\n" +
-			"Flags:\n" +
-			"	--discovery-url		OpenID discovery endpoint. If provided, authorization-url and token-url will be ignored.\n" +
-			"	--authorization-url	authorization URL. Default value is https://localhost:9443/oauth2/authorize.\n" +
-			"	--token-url		token URL. Default value is https://localhost:9443/oauth2/token\n" +
-			"	--client-id		client ID.\n" +
-			"	--client-secret		client secret.\n" +
-			"	--scopes		scopes.")
-	}
-
-	var discoveryEndpoint = flag.String("discovery-url", "", "OpenID discovery endpoint")
-	var authorizationEndpoint = flag.String("authorization-url", "https://localhost:9443/oauth2/authorize", "OAuth2 authorization URL")
-	var tokenEndpoint = flag.String("token-url", "https://localhost:9443/oauth2/token", "OAuth2 token URL")
-	var clientID = flag.String("client-id", "client", "OAuth2 client ID")
-	var clientSecret = flag.String("client-secret", "clientSecret", "OAuth2 client secret")
-	var scopes = flag.String("scopes", "openid", "OAuth2 scopes")
-
+	flag.Usage = usage
 	flag.Parse()
-	if *clientID == "" {
-		log.Fatal("client-id is required to run this command")
-	} else if *clientSecret == "" {
-		log.Fatal("client-secret is required to run this command")
+
+	// If no command is specified, print usage and exit
+	if flag.NArg() < 1 {
+		usage()
+		os.Exit(1)
 	}
-	oidc.HandleOpenIDFlow(*clientID, *clientSecret, *scopes, callbackURL, *discoveryEndpoint, *authorizationEndpoint, *tokenEndpoint)
+
+	subCmd := flag.Arg(0)
+	subCmdArgs := flag.Args()[1:]
+	runCommand(subCmd, subCmdArgs)
 }
