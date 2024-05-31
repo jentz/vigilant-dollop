@@ -4,16 +4,21 @@ Command-line OIDC client, get a token without all the fuss
 ## Usage
 
 ```bash
-Usage: oidc-cli [flags]
-       setup an openid client with the callback url : http://localhost:9555/callback and set below flags to get a token response
+oidc-cli is a command-line OIDC client, get a token without all the fuss
+
+Usage:
+  oidc-cli [flags] <command> [command-flags]
+
+Commands:
+  authorization_code: Uses the authorization code flow to get a token response
+  client_credentials: Uses the client credentials flow to get a token response
+  help              : Prints help
+
 Flags:
-        --discovery-url         OpenID discovery endpoint. If provided, authorization-url and token-url will be ignored.
-        --authorization-url     authorization URL. Default value is https://localhost:9443/oauth2/authorize.
-        --token-url             token URL. Default value is https://localhost:9443/oauth2/token
-        --client-id             client ID.
-        --client-secret         client secret.
-        --scopes                scopes.
+
+Run `oidc-cli <command> -h` to get help for a specific command
 ```
+
 ## Installing
 
 Installing with homebrew
@@ -27,13 +32,12 @@ You can also download a suitable release for your platform from the [releases pa
 ## Run
 
 ```bash
-go run cmd/oidc-cli.go --authorization-url <authorization-url> --token-url <token-url> --client-id <client-id> --client-secret <client-secret>
+go run cmd/** authorization_code --authorization-url <authorization-url> --token-url <token-url> --client-id <client-id> --client-secret <client-secret> --scopes "openid profile"
 ```
-
 
 ## Build
 
 ```bash
-go build  cmd/oidc-cli.go
+ go build -v -o oidc-cli ./cmd/**
 ```
 

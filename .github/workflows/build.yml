@@ -28,6 +28,6 @@ jobs:
       - name: Get dependencies
         run: go mod download
       - name: Build
-        run: go build -v cmd/oidc-cli.go
+        run: go build -v -o oidc-cli cmd/**
       - name: Run tests
         run: go test -v ./...
