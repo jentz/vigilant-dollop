@@ -6,7 +6,7 @@ import (
 	oidc "github.com/jentz/vigilant-dollop"
 )
 
-func parseAuthorizationCodeFlags(name string, args []string) (config interface{}, output string, err error) {
+func parseAuthorizationCodeFlags(name string, args []string) (config oidc.Command, output string, err error) {
 	flags := flag.NewFlagSet(name, flag.ContinueOnError)
 	var buf bytes.Buffer
 	flags.SetOutput(&buf)
@@ -24,9 +24,4 @@ func parseAuthorizationCodeFlags(name string, args []string) (config interface{}
 	}
 
 	return &conf, buf.String(), nil
-}
-
-func authorizationCodeCmd(config interface{}) error {
-	cmd := oidc.NewAuthorizationCodeCmd(config.(*oidc.AuthorizationCodeConfig))
-	return cmd.Run()
 }

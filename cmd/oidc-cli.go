@@ -4,30 +4,21 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	oidc "github.com/jentz/vigilant-dollop"
 	"os"
 	"slices"
 )
 
 type Command struct {
-	Name  string
-	Help  string
-	Parse func(name string, args []string) (config interface{}, output string, err error)
-	Run   func(config interface{}) error
+	Name      string
+	Help      string
+	Configure func(name string, args []string) (config oidc.Command, output string, err error)
 }
 
 var commands = []Command{
-	{Name: "authorization_code", Help: "Uses the authorization code flow to get a token response", Parse: parseAuthorizationCodeFlags, Run: authorizationCodeCmd},
-	{Name: "client_credentials", Help: "Uses the client credentials flow to get a token response", Run: clientCredentialsCmd},
-	{Name: "help", Help: "Prints help", Run: helpCmd},
-}
-
-func helpCmd(_ interface{}) error {
-	flag.Usage()
-	return nil
-}
-
-func clientCredentialsCmd(config interface{}) error {
-	return nil
+	{Name: "authorization_code", Help: "Uses the authorization code flow to get a token response", Configure: parseAuthorizationCodeFlags},
+	{Name: "client_credentials", Help: "Uses the client credentials flow to get a token response"},
+	{Name: "help", Help: "Prints help"},
 }
 
 func usage() {
@@ -65,11 +56,11 @@ func runCommand(name string, args []string) {
 
 	cmd := commands[cmdIdx]
 	if cmd.Name == "help" {
-		cmd.Run(nil)
-		return
+		flag.Usage()
+		os.Exit(0)
 	}
 
-	config, output, err := cmd.Parse(name, args)
+	command, output, err := cmd.Configure(name, args)
 	if errors.Is(err, flag.ErrHelp) {
 		fmt.Println(output)
 		os.Exit(2)
@@ -79,7 +70,7 @@ func runCommand(name string, args []string) {
 		os.Exit(1)
 	}
 
-	if err := cmd.Run(config); err != nil {
+	if err := command.Run(); err != nil {
 		fmt.Fprintf(os.Stderr, "error: %v", err.Error())
 		os.Exit(1)
 	}
