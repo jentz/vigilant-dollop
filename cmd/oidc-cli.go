@@ -4,9 +4,10 @@ import (
 	"errors"
 	"flag"
 	"fmt"
-	oidc "github.com/jentz/vigilant-dollop"
 	"os"
 	"slices"
+
+	oidc "github.com/jentz/vigilant-dollop"
 )
 
 type Command struct {
@@ -17,7 +18,7 @@ type Command struct {
 
 var commands = []Command{
 	{Name: "authorization_code", Help: "Uses the authorization code flow to get a token response", Configure: parseAuthorizationCodeFlags},
-	{Name: "client_credentials", Help: "Uses the client credentials flow to get a token response"},
+	{Name: "client_credentials", Help: "Uses the client credentials flow to get a token response", Configure: parseClientCredentialsFlags},
 	{Name: "help", Help: "Prints help"},
 }
 
