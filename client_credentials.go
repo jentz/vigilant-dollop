@@ -9,35 +9,25 @@ import (
 	"strings"
 )
 
-type ClientCredentialsConfig struct {
-	DiscoveryEndpoint     string
-	AuthorizationEndpoint string
-	TokenEndpoint         string
-	ClientID              string
-	ClientSecret          string
-	Scopes			      string
+type ClientCredentialsFlow struct {
+	ServerConfig *ServerConfig
+	ClientConfig *ClientConfig
 }
 
-func (c *ClientCredentialsConfig) DiscoverEndpoints() {
-	if c.DiscoveryEndpoint != "" {
-		resp, err := http.Get(c.DiscoveryEndpoint)
-		if err != nil {
-			log.Fatal(err)
-		}
-		var discoveryJson map[string]interface{}
-		json.NewDecoder(resp.Body).Decode(&discoveryJson)
-		c.AuthorizationEndpoint = discoveryJson["authorization_endpoint"].(string)
-		c.TokenEndpoint = discoveryJson["token_endpoint"].(string)
+func NewClientCredentialsFlow(serverConf *ServerConfig, clientConf *ClientConfig) *ClientCredentialsFlow {
+	return &ClientCredentialsFlow {
+		ServerConfig: serverConf,
+		ClientConfig: clientConf,
 	}
 }
 
-func (c *ClientCredentialsConfig) Run() error {
+func (c *ClientCredentialsFlow) Run() error {
 	vals := url.Values{}
 	vals.Set("grant_type", "client_credentials")
-	vals.Set("client_id", c.ClientID)
-	vals.Set("client_secret", c.ClientSecret)
+	vals.Set("client_id", c.ClientConfig.ClientID)
+	vals.Set("client_secret", c.ClientConfig.ClientSecret)
 
-	req, err := http.NewRequest("POST", c.TokenEndpoint, strings.NewReader(vals.Encode()))
+	req, err := http.NewRequest("POST", c.ServerConfig.TokenEndpoint, strings.NewReader(vals.Encode()))
 	if err != nil {
 		log.Fatal(err)
 	}

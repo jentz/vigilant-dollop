@@ -14,10 +14,6 @@ import (
 	"time"
 )
 
-type Command interface {
-	Run() error
-}
-
 type callbackEndpoint struct {
 	server         *http.Server
 	code           string
