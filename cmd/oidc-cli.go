@@ -6,14 +6,16 @@ import (
 	"fmt"
 	"os"
 	"slices"
-
-	oidc "github.com/jentz/vigilant-dollop"
 )
+
+type CommandRunner interface {
+	Run() error
+}
 
 type Command struct {
 	Name      string
 	Help      string
-	Configure func(name string, args []string) (config oidc.Command, output string, err error)
+	Configure func(name string, args []string) (config CommandRunner, output string, err error)
 }
 
 var commands = []Command{
