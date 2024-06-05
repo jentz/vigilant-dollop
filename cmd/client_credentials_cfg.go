@@ -20,16 +20,39 @@ func parseClientCredentialsFlags(name string, args []string) (runner CommandRunn
 	flags.StringVar(&clientConf.ClientID, "client-id", "", "set client ID")
 	flags.StringVar(&clientConf.ClientSecret, "client-secret", "", "set client secret")
 
-	runner = oidc.NewClientCredentialsFlow(
-		&serverConf,
-		&clientConf)
+	runner = &oidc.ClientCredentialsFlow{
+		ServerConfig: &serverConf,
+		ClientConfig: &clientConf,
+	}
 
 	err = flags.Parse(args)
 	if err != nil {
 		return nil, buf.String(), err
 	}
 
-	serverConf.DiscoverEndpoints()
+	var invalidArgsChecks = []struct {
+		condition bool
+		message   string
+	}{
+		{
+			(clientConf.ClientID == ""),
+			"client-id is required",
+		},
+		{
+			(clientConf.ClientSecret == ""),
+			"client-secret is required",
+		},
+		{
+			(serverConf.DiscoveryEndpoint == "" && (serverConf.AuthorizationEndpoint == "" && serverConf.TokenEndpoint == "")),
+			"discovery-url or authorization-url and token-url are required",
+		},
+	}
+
+	for _, check := range invalidArgsChecks {
+		if check.condition {
+			return nil, check.message, flag.ErrHelp
+		}
+	}
 
 	return runner, buf.String(), nil
 }
