@@ -9,11 +9,12 @@ type AuthorizationCodeFlow struct {
 type AuthorizationCodeFlowConfig struct {
 	Scopes      string
 	CallbackURI string
+	PKCE		bool
 }
 
 func (c *AuthorizationCodeFlow) Run() error {
 	c.ServerConfig.DiscoverEndpoints()
 
-	HandleOpenIDFlow(c.ClientConfig.ClientID, c.ClientConfig.ClientSecret, c.FlowConfig.Scopes, "http://localhost:9555/callback", c.ServerConfig.DiscoveryEndpoint, c.ServerConfig.AuthorizationEndpoint, c.ServerConfig.TokenEndpoint)
+	HandleOpenIDFlow(c.ClientConfig.ClientID, c.ClientConfig.ClientSecret, c.FlowConfig.Scopes, "http://localhost:9555/callback", c.ServerConfig.DiscoveryEndpoint, c.ServerConfig.AuthorizationEndpoint, c.ServerConfig.TokenEndpoint, c.FlowConfig.PKCE)
 	return nil
 }
