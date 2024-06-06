@@ -21,18 +21,52 @@ func parseAuthorizationCodeFlags(name string, args []string) (runner CommandRunn
 	flags.StringVar(&clientConf.ClientID, "client-id", "", "set client ID")
 	flags.StringVar(&clientConf.ClientSecret, "client-secret", "", "set client secret")
 
-	runner = oidc.NewAuthorizationCodeFlow(
-		&serverConf,
-		&clientConf,
-		flags.String("scopes", "", "set scopes as a space separated list"),
-		flags.String("callback-uri", "", "set OIDC callback uri"))
+	var flowConf oidc.AuthorizationCodeFlowConfig
+	flags.StringVar(&flowConf.Scopes, "scopes", "openid", "set scopes as a space separated list")
+	flags.StringVar(&flowConf.CallbackURI, "callback-uri", "http://localhost:9555/callback", "set OIDC callback uri")
+
+	runner = &oidc.AuthorizationCodeFlow{
+		ServerConfig: &serverConf,
+		ClientConfig: &clientConf,
+		FlowConfig:   &flowConf,
+	}
 
 	err = flags.Parse(args)
 	if err != nil {
 		return nil, buf.String(), err
 	}
 
-	serverConf.DiscoverEndpoints()
+	var invalidArgsChecks = []struct {
+		condition bool
+		message   string
+	}{
+		{
+			(clientConf.ClientID == ""),
+			"client-id is required",
+		},
+		{
+			(clientConf.ClientSecret == ""),
+			"client-secret is required",
+		},
+		{
+			(flowConf.Scopes == ""),
+			"scopes are required",
+		},
+		{
+			(flowConf.CallbackURI == ""),
+			"callback-uri is required",
+		},
+		{
+			(serverConf.DiscoveryEndpoint == "" && (serverConf.AuthorizationEndpoint == "" && serverConf.TokenEndpoint == "")),
+			"discovery-url or authorization-url and token-url are required",
+		},
+	}
+
+	for _, check := range invalidArgsChecks {
+		if check.condition {
+			return nil, check.message, flag.ErrHelp
+		}
+	}
 
 	return runner, buf.String(), nil
 }

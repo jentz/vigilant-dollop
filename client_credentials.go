@@ -14,14 +14,9 @@ type ClientCredentialsFlow struct {
 	ClientConfig *ClientConfig
 }
 
-func NewClientCredentialsFlow(serverConf *ServerConfig, clientConf *ClientConfig) *ClientCredentialsFlow {
-	return &ClientCredentialsFlow {
-		ServerConfig: serverConf,
-		ClientConfig: clientConf,
-	}
-}
-
 func (c *ClientCredentialsFlow) Run() error {
+	c.ServerConfig.DiscoverEndpoints()
+
 	vals := url.Values{}
 	vals.Set("grant_type", "client_credentials")
 	vals.Set("client_id", c.ClientConfig.ClientID)
