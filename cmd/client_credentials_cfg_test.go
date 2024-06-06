@@ -98,7 +98,7 @@ func TestParseClientCredentialsFlagsError(t *testing.T) {
 		args []string
 	}{
 		{
-			"missing discovery-url, authorization-url and token-url",
+			"missing discovery-url and token-url",
 			[]string{
 				"--client-id", "client-id",
 				"--client-secret", "client-secret",

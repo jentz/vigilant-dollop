@@ -43,8 +43,8 @@ func parseClientCredentialsFlags(name string, args []string) (runner CommandRunn
 			"client-secret is required",
 		},
 		{
-			(serverConf.DiscoveryEndpoint == "" && (serverConf.AuthorizationEndpoint == "" && serverConf.TokenEndpoint == "")),
-			"discovery-url or authorization-url and token-url are required",
+			(serverConf.DiscoveryEndpoint == "" && serverConf.TokenEndpoint == ""),
+			"discovery-url or token-url are required",
 		},
 	}
 
