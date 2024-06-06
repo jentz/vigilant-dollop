@@ -2,10 +2,13 @@ package oidc
 
 import (
 	"context"
+	"crypto/sha256"
 	"crypto/tls"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"log"
+	"math/rand"
 	"net/http"
 	"net/url"
 	"os"
@@ -34,7 +37,17 @@ func (h *callbackEndpoint) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	h.shutdownSignal <- "shutdown"
 }
 
-func HandleOpenIDFlow(clientID, clientSecret, scopes, callbackURL, discoveryEndpoint, authorizationEndpoint, tokenEndpoint string) {
+func randomString(n int) string {
+    var letters = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789")
+ 
+    s := make([]rune, n)
+    for i := range s {
+        s[i] = letters[rand.Intn(len(letters))]
+    }
+    return string(s)
+}
+
+func HandleOpenIDFlow(clientID, clientSecret, scopes, callbackURL, discoveryEndpoint, authorizationEndpoint, tokenEndpoint string, pkce bool) {
 
 	callbackEndpoint := &callbackEndpoint{}
 	callbackEndpoint.shutdownSignal = make(chan string)
@@ -68,6 +81,16 @@ func HandleOpenIDFlow(clientID, clientSecret, scopes, callbackURL, discoveryEndp
 	query.Set("response_type", "code")
 	query.Set("scope", scopes)
 	query.Set("redirect_uri", callbackURL)
+
+	var codeVerifier string
+	if pkce {
+		len := rand.Intn(128-43) + 43
+		codeVerifier = randomString(len)
+		sha256 := sha256.Sum256([]byte(codeVerifier))
+		codeChallenge := base64.RawURLEncoding.EncodeToString(sha256[:])
+		query.Set("code_challenge_method", "S256")
+		query.Set("code_challenge", codeChallenge)
+	}
 	authURL.RawQuery = query.Encode()
 
 	fmt.Fprintf(os.Stderr, "authURL is %s\n", authURL.String())
@@ -96,6 +119,9 @@ func HandleOpenIDFlow(clientID, clientSecret, scopes, callbackURL, discoveryEndp
 	vals.Set("grant_type", "authorization_code")
 	vals.Set("code", callbackEndpoint.code)
 	vals.Set("redirect_uri", callbackURL)
+	if pkce {
+		vals.Set("code_verifier", codeVerifier)
+	}
 	req, err := http.NewRequest("POST", tokenEndpoint, strings.NewReader(vals.Encode()))
 	if err != nil {
 		log.Fatal(err)
