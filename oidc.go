@@ -2,10 +2,14 @@ package oidc
 
 import (
 	"context"
+	"crypto/rand"
+	"crypto/sha256"
 	"crypto/tls"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"log"
+	"math/big"
 	"net/http"
 	"net/url"
 	"os"
@@ -34,7 +38,25 @@ func (h *callbackEndpoint) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	h.shutdownSignal <- "shutdown"
 }
 
-func HandleOpenIDFlow(clientID, clientSecret, scopes, callbackURL, discoveryEndpoint, authorizationEndpoint, tokenEndpoint string) {
+func randomString(n int) string {
+    b := make([]byte, n)
+    _, err := rand.Read(b)
+    if err != nil {
+        log.Fatal(err)
+    }
+    return base64.URLEncoding.EncodeToString(b)[0:n-1]
+}
+
+func randomInt(min, max int) int {
+	nBig, err := rand.Int(rand.Reader, big.NewInt(int64(max-min)))
+    if err != nil {
+        log.Fatal(err)
+    }
+    return int(nBig.Int64()) + min
+}
+
+
+func HandleOpenIDFlow(clientID, clientSecret, scopes, callbackURL, discoveryEndpoint, authorizationEndpoint, tokenEndpoint string, pkce bool) {
 
 	callbackEndpoint := &callbackEndpoint{}
 	callbackEndpoint.shutdownSignal = make(chan string)
@@ -68,6 +90,15 @@ func HandleOpenIDFlow(clientID, clientSecret, scopes, callbackURL, discoveryEndp
 	query.Set("response_type", "code")
 	query.Set("scope", scopes)
 	query.Set("redirect_uri", callbackURL)
+
+	var codeVerifier string
+	if pkce {
+		codeVerifier = randomString(randomInt(43, 128))
+		sha256Sum := sha256.Sum256([]byte(codeVerifier))
+		codeChallenge := base64.RawURLEncoding.EncodeToString(sha256Sum[:])
+		query.Set("code_challenge_method", "S256")
+		query.Set("code_challenge", codeChallenge)
+	}
 	authURL.RawQuery = query.Encode()
 
 	fmt.Fprintf(os.Stderr, "authURL is %s\n", authURL.String())
@@ -96,6 +127,9 @@ func HandleOpenIDFlow(clientID, clientSecret, scopes, callbackURL, discoveryEndp
 	vals.Set("grant_type", "authorization_code")
 	vals.Set("code", callbackEndpoint.code)
 	vals.Set("redirect_uri", callbackURL)
+	if pkce {
+		vals.Set("code_verifier", codeVerifier)
+	}
 	req, err := http.NewRequest("POST", tokenEndpoint, strings.NewReader(vals.Encode()))
 	if err != nil {
 		log.Fatal(err)

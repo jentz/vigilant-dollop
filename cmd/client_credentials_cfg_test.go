@@ -7,7 +7,7 @@ import (
 	oidc "github.com/jentz/vigilant-dollop"
 )
 
-func TestParseClientCredentialsFlagsCorrect(t *testing.T) {
+func TestParseClientCredentialsFlagsResult(t *testing.T) {
 	
 	var tests = []struct {
 		name string
