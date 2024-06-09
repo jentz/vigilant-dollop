@@ -24,6 +24,7 @@ func parseAuthorizationCodeFlags(name string, args []string) (runner CommandRunn
 	var flowConf oidc.AuthorizationCodeFlowConfig
 	flags.StringVar(&flowConf.Scopes, "scopes", "openid", "set scopes as a space separated list")
 	flags.StringVar(&flowConf.CallbackURI, "callback-uri", "http://localhost:9555/callback", "set OIDC callback uri")
+	flags.BoolVar(&flowConf.PKCE, "pkce", false, "Enable proof-key for code exchange (PKCE)")
 
 	runner = &oidc.AuthorizationCodeFlow{
 		ServerConfig: &serverConf,
@@ -45,8 +46,8 @@ func parseAuthorizationCodeFlags(name string, args []string) (runner CommandRunn
 			"client-id is required",
 		},
 		{
-			(clientConf.ClientSecret == ""),
-			"client-secret is required",
+			(clientConf.ClientSecret == "" && !flowConf.PKCE),
+			"client-secret is required unless using PKCE",
 		},
 		{
 			(flowConf.Scopes == ""),
