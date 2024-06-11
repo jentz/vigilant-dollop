@@ -40,10 +40,10 @@ func (h *callbackEndpoint) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 func randomInt(min, max int) int {
 	nBig, err := rand.Int(rand.Reader, big.NewInt(int64(max-min)))
-    if err != nil {
-        panic(err)
-    }
-    return int(nBig.Int64()) + min
+	if err != nil {
+		panic(err)
+	}
+	return int(nBig.Int64()) + min
 }
 
 func generateCodeVerifier(n int) string {
@@ -107,7 +107,6 @@ func HandleOpenIDFlow(clientID, clientSecret, scopes, callbackURL, discoveryEndp
 		query.Set("code_challenge_method", "S256")
 		query.Set("code_challenge", codeChallenge)
 	}
-	log.Printf("codeVerifier: %s\n", codeVerifier)
 
 	authURL.RawQuery = query.Encode()
 
