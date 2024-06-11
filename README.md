@@ -44,6 +44,6 @@ go test -v ./...
 ## Build
 
 ```bash
- go build -v -o oidc-cli ./cmd/**
+ go build -v -o oidc-cli ./cmd
 ```
 
