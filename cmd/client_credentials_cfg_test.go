@@ -18,12 +18,14 @@ func TestParseClientCredentialsFlagsResult(t *testing.T) {
 		{
 			"all flags",
 			[]string{
+				"--issuer", "https://example.com",
 				"--discovery-url", "https://example.com/.well-known/openid-configuration",
 				"--token-url", "https://example.com/token",
 				"--client-id", "client-id",
 				"--client-secret", "client-secret",
 			},
 			oidc.ServerConfig{
+				IssuerUrl: "https://example.com",
 				DiscoveryEndpoint: "https://example.com/.well-known/openid-configuration",
 				TokenEndpoint: "https://example.com/token",
 			},
@@ -33,14 +35,15 @@ func TestParseClientCredentialsFlagsResult(t *testing.T) {
 			},
 		},
 		{
-			"only discovery-url",
+			"only issuer",
 			[]string{
-				"--discovery-url", "https://example.com/.well-known/openid-configuration",
+				"--issuer", "https://example.com",
 				"--client-id", "client-id",
 				"--client-secret", "client-secret",
 			},
 			oidc.ServerConfig{
-				DiscoveryEndpoint: "https://example.com/.well-known/openid-configuration",
+				IssuerUrl: "https://example.com",
+				DiscoveryEndpoint: "",
 				AuthorizationEndpoint: "",
 				TokenEndpoint: "",
 			},
@@ -52,12 +55,13 @@ func TestParseClientCredentialsFlagsResult(t *testing.T) {
 		{
 			"no scopes provided",
 			[]string{
-				"--discovery-url", "https://example.com/.well-known/openid-configuration",
+				"--issuer", "https://example.com",
 				"--client-id", "client-id",
 				"--client-secret", "client-secret",
 			},
 			oidc.ServerConfig{
-				DiscoveryEndpoint: "https://example.com/.well-known/openid-configuration",
+				IssuerUrl: "https://example.com",
+				DiscoveryEndpoint: "",
 				AuthorizationEndpoint: "",
 				TokenEndpoint: "",
 			},
@@ -107,6 +111,7 @@ func TestParseClientCredentialsFlagsError(t *testing.T) {
 		{
 			"missing client-secret",
 			[]string{
+				"--issuer", "https://example.com",
 				"--discovery-url", "https://example.com/.well-known/openid-configuration",
 				"--client-id", "client-id",
 			},

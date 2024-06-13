@@ -7,6 +7,7 @@ import (
 )
 
 type ServerConfig struct {
+	IssuerUrl			  string
 	DiscoveryEndpoint     string
 	AuthorizationEndpoint string
 	TokenEndpoint         string
@@ -14,15 +15,22 @@ type ServerConfig struct {
 	UserinfoEndpoint      string
 }
 
-func (c *ServerConfig) DiscoverEndpoints() {
-	if c.DiscoveryEndpoint != "" {
-		resp, err := http.Get(c.DiscoveryEndpoint)
-		if err != nil {
-			log.Fatal(err)
-		}
-		var discoveryJson map[string]interface{}
-		json.NewDecoder(resp.Body).Decode(&discoveryJson)
-		c.AuthorizationEndpoint = discoveryJson["authorization_endpoint"].(string)
-		c.TokenEndpoint = discoveryJson["token_endpoint"].(string)
+func assignIfEmpty(a *string, b string) {
+	if *a == "" {
+		*a = b
 	}
+}
+
+func (c *ServerConfig) DiscoverEndpoints() {
+	assignIfEmpty(&c.DiscoveryEndpoint, c.IssuerUrl + "/.well-known/openid-configuration")
+	resp, err := http.Get(c.DiscoveryEndpoint)
+	if err != nil {
+		log.Fatal(err)
+	}
+	var discoveryJson map[string]interface{}
+	json.NewDecoder(resp.Body).Decode(&discoveryJson)
+	assignIfEmpty(&c.AuthorizationEndpoint, discoveryJson["authorization_endpoint"].(string))
+	assignIfEmpty(&c.TokenEndpoint, discoveryJson["token_endpoint"].(string))
+	assignIfEmpty(&c.IntrospectionEndpoint, discoveryJson["introspection_endpoint"].(string))
+	assignIfEmpty(&c.UserinfoEndpoint, discoveryJson["userinfo_endpoint"].(string))
 }
