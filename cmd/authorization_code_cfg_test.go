@@ -13,9 +13,7 @@ func TestParseAuthorizationCodeFlagsResult(t *testing.T) {
 		name string
 		args []string
 		oidcConf oidc.Config
-		scopes string
-		callbackURI string
-		pkce bool
+		flowConf oidc.AuthorizationCodeFlowConfig
 	}{
 		{
 			"all flags",
@@ -37,9 +35,11 @@ func TestParseAuthorizationCodeFlagsResult(t *testing.T) {
 				ClientID: "client-id",
 				ClientSecret: "client-secret",
 			},
-			"openid profile email",
-			"http://localhost:8080/callback",
-			false,
+			oidc.AuthorizationCodeFlowConfig{
+				Scopes: "openid profile email",
+				CallbackURI: "http://localhost:8080/callback",
+				PKCE: false,
+			},
 		},
 		{
 			"only issuer",
@@ -58,9 +58,11 @@ func TestParseAuthorizationCodeFlagsResult(t *testing.T) {
 				ClientID: "client-id",
 				ClientSecret: "client-secret",
 			},
-			"openid profile email",
-			"http://localhost:8080/callback",
-			false,
+			oidc.AuthorizationCodeFlowConfig{
+				Scopes: "openid profile email",
+				CallbackURI: "http://localhost:8080/callback",
+				PKCE: false,
+			},
 		},
 		{
 			"no scopes provided",
@@ -78,9 +80,11 @@ func TestParseAuthorizationCodeFlagsResult(t *testing.T) {
 				ClientID: "client-id",
 				ClientSecret: "client-secret",
 			},
-			"openid",
-			"http://localhost:8080/callback",
-			false,
+			oidc.AuthorizationCodeFlowConfig{
+				Scopes: "openid",
+				CallbackURI: "http://localhost:8080/callback",
+				PKCE: false,
+			},
 		},
 		{
 			"no callback-uri provided",
@@ -98,9 +102,11 @@ func TestParseAuthorizationCodeFlagsResult(t *testing.T) {
 				ClientID: "client-id",
 				ClientSecret: "client-secret",
 			},
-			"openid profile email",
-			"http://localhost:9555/callback",
-			false,
+			oidc.AuthorizationCodeFlowConfig{
+				Scopes: "openid profile email",
+				CallbackURI: "http://localhost:9555/callback",
+				PKCE: false,
+			},
 		},
 		{
 			"client-secret and pkce",
@@ -119,9 +125,11 @@ func TestParseAuthorizationCodeFlagsResult(t *testing.T) {
 				ClientID: "client-id",
 				ClientSecret: "client-secret",
 			},
-			"openid profile email",
-			"http://localhost:9555/callback",
-			true,
+			oidc.AuthorizationCodeFlowConfig{
+				Scopes: "openid profile email",
+				CallbackURI: "http://localhost:9555/callback",
+				PKCE: true,
+			},
 		},
 		{
 			"no client-secret and pkce",
@@ -139,9 +147,11 @@ func TestParseAuthorizationCodeFlagsResult(t *testing.T) {
 				ClientID: "client-id",
 				ClientSecret: "",
 			},
-			"openid profile email",
-			"http://localhost:9555/callback",
-			true,
+			oidc.AuthorizationCodeFlowConfig{
+				Scopes: "openid profile email",
+				CallbackURI: "http://localhost:9555/callback",
+				PKCE: true,
+			},
 		},
 		{
 			"flags after non-flag argument",
@@ -161,9 +171,11 @@ func TestParseAuthorizationCodeFlagsResult(t *testing.T) {
 				ClientID: "client-id",
 				ClientSecret: "client-secret",
 			},
-			"openid", // expecting default value as argument is not parsed
-			"http://localhost:9555/callback", // expecting default value as argument is not parsed
-			false,
+			oidc.AuthorizationCodeFlowConfig{
+				Scopes: "openid", // expecting default value as argument is not parsed
+				CallbackURI: "http://localhost:9555/callback", // expecting default value as argument is not parsed
+				PKCE: false,
+			},
 		},
 	}
 		
@@ -183,11 +195,8 @@ func TestParseAuthorizationCodeFlagsResult(t *testing.T) {
 			if !reflect.DeepEqual(*f.Config, tt.oidcConf) {
 				t.Errorf("Config got %+v, want %+v", *f.Config, tt.oidcConf)
 			}
-			if f.FlowConfig.Scopes != tt.scopes {
-				t.Errorf("Scopes got %q, want %q", f.FlowConfig.Scopes, tt.scopes)
-			}
-			if f.FlowConfig.CallbackURI != tt.callbackURI {
-				t.Errorf("CallbackURI got %q, want %q", f.FlowConfig.CallbackURI, tt.callbackURI)
+			if !reflect.DeepEqual(*f.FlowConfig, tt.flowConf) {
+				t.Errorf("OIDCConfig got %+v, want %+v", *f.FlowConfig, tt.flowConf)
 			}
 		})
 	}
