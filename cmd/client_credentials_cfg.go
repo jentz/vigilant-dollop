@@ -12,18 +12,15 @@ func parseClientCredentialsFlags(name string, args []string) (runner CommandRunn
 	var buf bytes.Buffer
 	flags.SetOutput(&buf)
 
-	var serverConf oidc.ServerConfig
-	flags.StringVar(&serverConf.IssuerUrl, "issuer", "", "set issuer url (required)")
-	flags.StringVar(&serverConf.DiscoveryEndpoint, "discovery-url", "", "override discovery url")
-	flags.StringVar(&serverConf.TokenEndpoint, "token-url", "", "override token url")
-
-	var clientConf oidc.ClientConfig
-	flags.StringVar(&clientConf.ClientID, "client-id", "", "set client ID (required)")
-	flags.StringVar(&clientConf.ClientSecret, "client-secret", "", "set client secret (required)")
+	var oidcConf oidc.Config
+	flags.StringVar(&oidcConf.IssuerUrl, "issuer", "", "set issuer url (required)")
+	flags.StringVar(&oidcConf.DiscoveryEndpoint, "discovery-url", "", "override discovery url")
+	flags.StringVar(&oidcConf.TokenEndpoint, "token-url", "", "override token url")
+	flags.StringVar(&oidcConf.ClientID, "client-id", "", "set client ID (required)")
+	flags.StringVar(&oidcConf.ClientSecret, "client-secret", "", "set client secret (required)")
 
 	runner = &oidc.ClientCredentialsFlow{
-		ServerConfig: &serverConf,
-		ClientConfig: &clientConf,
+		Config: &oidcConf,
 	}
 
 	err = flags.Parse(args)
@@ -36,15 +33,15 @@ func parseClientCredentialsFlags(name string, args []string) (runner CommandRunn
 		message   string
 	}{
 		{
-			(serverConf.IssuerUrl == ""),
+			(oidcConf.IssuerUrl == ""),
 			"issuer is required",
 		},
 		{
-			(clientConf.ClientID == ""),
+			(oidcConf.ClientID == ""),
 			"client-id is required",
 		},
 		{
-			(clientConf.ClientSecret == ""),
+			(oidcConf.ClientSecret == ""),
 			"client-secret is required",
 		},
 	}

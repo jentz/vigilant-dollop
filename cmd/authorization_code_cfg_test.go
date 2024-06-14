@@ -12,8 +12,7 @@ func TestParseAuthorizationCodeFlagsResult(t *testing.T) {
 	var tests = []struct {
 		name string
 		args []string
-		serverConf oidc.ServerConfig
-		clientConf oidc.ClientConfig
+		oidcConf oidc.Config
 		scopes string
 		callbackURI string
 		pkce bool
@@ -30,13 +29,11 @@ func TestParseAuthorizationCodeFlagsResult(t *testing.T) {
 				"--scopes", "openid profile email",
 				"--callback-uri", "http://localhost:8080/callback",
 			},
-			oidc.ServerConfig{
+			oidc.Config{
 				IssuerUrl: "https://example.com",
 				DiscoveryEndpoint: "https://example.com/.well-known/openid-configuration",
 				AuthorizationEndpoint: "https://example.com/authorize",
 				TokenEndpoint: "https://example.com/token",
-			},
-			oidc.ClientConfig{
 				ClientID: "client-id",
 				ClientSecret: "client-secret",
 			},
@@ -53,13 +50,11 @@ func TestParseAuthorizationCodeFlagsResult(t *testing.T) {
 				"--scopes", "openid profile email",
 				"--callback-uri", "http://localhost:8080/callback",
 			},
-			oidc.ServerConfig{
+			oidc.Config{
 				IssuerUrl: "https://example.com",
 				DiscoveryEndpoint: "",
 				AuthorizationEndpoint: "",
 				TokenEndpoint: "",
-			},
-			oidc.ClientConfig{
 				ClientID: "client-id",
 				ClientSecret: "client-secret",
 			},
@@ -75,13 +70,11 @@ func TestParseAuthorizationCodeFlagsResult(t *testing.T) {
 				"--client-secret", "client-secret",
 				"--callback-uri", "http://localhost:8080/callback",
 			},
-			oidc.ServerConfig{
+			oidc.Config{
 				IssuerUrl: "https://example.com",
 				DiscoveryEndpoint: "",
 				AuthorizationEndpoint: "",
 				TokenEndpoint: "",
-			},
-			oidc.ClientConfig{
 				ClientID: "client-id",
 				ClientSecret: "client-secret",
 			},
@@ -97,13 +90,11 @@ func TestParseAuthorizationCodeFlagsResult(t *testing.T) {
 				"--client-secret", "client-secret",
 				"--scopes", "openid profile email",
 			},
-			oidc.ServerConfig{
+			oidc.Config{
 				IssuerUrl: "https://example.com",
 				DiscoveryEndpoint: "",
 				AuthorizationEndpoint: "",
 				TokenEndpoint: "",
-			},
-			oidc.ClientConfig{
 				ClientID: "client-id",
 				ClientSecret: "client-secret",
 			},
@@ -120,13 +111,11 @@ func TestParseAuthorizationCodeFlagsResult(t *testing.T) {
 				"--scopes", "openid profile email",
 				"--pkce", 
 			},
-			oidc.ServerConfig{
+			oidc.Config{
 				IssuerUrl: "https://example.com",
 				DiscoveryEndpoint: "",
 				AuthorizationEndpoint: "",
 				TokenEndpoint: "",
-			},
-			oidc.ClientConfig{
 				ClientID: "client-id",
 				ClientSecret: "client-secret",
 			},
@@ -142,13 +131,11 @@ func TestParseAuthorizationCodeFlagsResult(t *testing.T) {
 				"--scopes", "openid profile email",
 				"--pkce",
 			},
-			oidc.ServerConfig{
+			oidc.Config{
 				IssuerUrl: "https://example.com",
 				DiscoveryEndpoint: "",
 				AuthorizationEndpoint: "",
 				TokenEndpoint: "",
-			},
-			oidc.ClientConfig{
 				ClientID: "client-id",
 				ClientSecret: "",
 			},
@@ -166,13 +153,11 @@ func TestParseAuthorizationCodeFlagsResult(t *testing.T) {
 				"--scopes", "openid profile email",
 				"--callback-uri", "http://localhost:8080/callback",
 			},
-			oidc.ServerConfig{
+			oidc.Config{
 				IssuerUrl: "https://example.com",
 				DiscoveryEndpoint: "",
 				AuthorizationEndpoint: "",
 				TokenEndpoint: "",
-			},
-			oidc.ClientConfig{
 				ClientID: "client-id",
 				ClientSecret: "client-secret",
 			},
@@ -195,11 +180,8 @@ func TestParseAuthorizationCodeFlagsResult(t *testing.T) {
 			if !ok {
 				t.Errorf("unexpected runner type: %T", runner)
 			}
-			if !reflect.DeepEqual(*f.ServerConfig, tt.serverConf) {
-				t.Errorf("ServerConfig got %+v, want %+v", *f.ServerConfig, tt.serverConf)
-			}
-			if !reflect.DeepEqual(*f.ClientConfig, tt.clientConf) {
-				t.Errorf("ClientConfig got %+v, want %+v", *f.ClientConfig, tt.clientConf)
+			if !reflect.DeepEqual(*f.Config, tt.oidcConf) {
+				t.Errorf("Config got %+v, want %+v", *f.Config, tt.oidcConf)
 			}
 			if f.FlowConfig.Scopes != tt.scopes {
 				t.Errorf("Scopes got %q, want %q", f.FlowConfig.Scopes, tt.scopes)

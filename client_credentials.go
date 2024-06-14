@@ -10,19 +10,18 @@ import (
 )
 
 type ClientCredentialsFlow struct {
-	ServerConfig *ServerConfig
-	ClientConfig *ClientConfig
+	Config *Config
 }
 
 func (c *ClientCredentialsFlow) Run() error {
-	c.ServerConfig.DiscoverEndpoints()
+	c.Config.DiscoverEndpoints()
 
 	vals := url.Values{}
 	vals.Set("grant_type", "client_credentials")
-	vals.Set("client_id", c.ClientConfig.ClientID)
-	vals.Set("client_secret", c.ClientConfig.ClientSecret)
+	vals.Set("client_id", c.Config.ClientID)
+	vals.Set("client_secret", c.Config.ClientSecret)
 
-	req, err := http.NewRequest("POST", c.ServerConfig.TokenEndpoint, strings.NewReader(vals.Encode()))
+	req, err := http.NewRequest("POST", c.Config.TokenEndpoint, strings.NewReader(vals.Encode()))
 	if err != nil {
 		log.Fatal(err)
 	}
