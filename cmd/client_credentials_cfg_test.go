@@ -12,39 +12,37 @@ func TestParseClientCredentialsFlagsResult(t *testing.T) {
 	var tests = []struct {
 		name string
 		args []string
-		serverConf oidc.ServerConfig
-		clientConf oidc.ClientConfig
+		oidcConf oidc.Config
 	}{
 		{
 			"all flags",
 			[]string{
+				"--issuer", "https://example.com",
 				"--discovery-url", "https://example.com/.well-known/openid-configuration",
 				"--token-url", "https://example.com/token",
 				"--client-id", "client-id",
 				"--client-secret", "client-secret",
 			},
-			oidc.ServerConfig{
+			oidc.Config{
+				IssuerUrl: "https://example.com",
 				DiscoveryEndpoint: "https://example.com/.well-known/openid-configuration",
 				TokenEndpoint: "https://example.com/token",
-			},
-			oidc.ClientConfig{
 				ClientID: "client-id",
 				ClientSecret: "client-secret",
 			},
 		},
 		{
-			"only discovery-url",
+			"only issuer",
 			[]string{
-				"--discovery-url", "https://example.com/.well-known/openid-configuration",
+				"--issuer", "https://example.com",
 				"--client-id", "client-id",
 				"--client-secret", "client-secret",
 			},
-			oidc.ServerConfig{
-				DiscoveryEndpoint: "https://example.com/.well-known/openid-configuration",
+			oidc.Config{
+				IssuerUrl: "https://example.com",
+				DiscoveryEndpoint: "",
 				AuthorizationEndpoint: "",
 				TokenEndpoint: "",
-			},
-			oidc.ClientConfig{
 				ClientID: "client-id",
 				ClientSecret: "client-secret",
 			},
@@ -52,16 +50,15 @@ func TestParseClientCredentialsFlagsResult(t *testing.T) {
 		{
 			"no scopes provided",
 			[]string{
-				"--discovery-url", "https://example.com/.well-known/openid-configuration",
+				"--issuer", "https://example.com",
 				"--client-id", "client-id",
 				"--client-secret", "client-secret",
 			},
-			oidc.ServerConfig{
-				DiscoveryEndpoint: "https://example.com/.well-known/openid-configuration",
+			oidc.Config{
+				IssuerUrl: "https://example.com",
+				DiscoveryEndpoint: "",
 				AuthorizationEndpoint: "",
 				TokenEndpoint: "",
-			},
-			oidc.ClientConfig{
 				ClientID: "client-id",
 				ClientSecret: "client-secret",
 			},
@@ -81,11 +78,8 @@ func TestParseClientCredentialsFlagsResult(t *testing.T) {
 			if !ok {
 				t.Errorf("unexpected runner type: %T", runner)
 			}
-			if !reflect.DeepEqual(*f.ServerConfig, tt.serverConf) {
-				t.Errorf("ServerConfig got %+v, want %+v", *f.ServerConfig, tt.serverConf)
-			}
-			if !reflect.DeepEqual(*f.ClientConfig, tt.clientConf) {
-				t.Errorf("ClientConfig got %+v, want %+v", *f.ClientConfig, tt.clientConf)
+			if !reflect.DeepEqual(*f.Config, tt.oidcConf) {
+				t.Errorf("Config got %+v, want %+v", *f.Config, tt.oidcConf)
 			}
 		})
 	}
@@ -107,6 +101,7 @@ func TestParseClientCredentialsFlagsError(t *testing.T) {
 		{
 			"missing client-secret",
 			[]string{
+				"--issuer", "https://example.com",
 				"--discovery-url", "https://example.com/.well-known/openid-configuration",
 				"--client-id", "client-id",
 			},

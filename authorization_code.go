@@ -1,9 +1,8 @@
 package oidc
 
 type AuthorizationCodeFlow struct {
-	ServerConfig *ServerConfig
-	ClientConfig *ClientConfig
-	FlowConfig   *AuthorizationCodeFlowConfig
+	Config *Config
+	FlowConfig *AuthorizationCodeFlowConfig
 }
 
 type AuthorizationCodeFlowConfig struct {
@@ -13,8 +12,8 @@ type AuthorizationCodeFlowConfig struct {
 }
 
 func (c *AuthorizationCodeFlow) Run() error {
-	c.ServerConfig.DiscoverEndpoints()
+	c.Config.DiscoverEndpoints()
 
-	HandleOpenIDFlow(c.ClientConfig.ClientID, c.ClientConfig.ClientSecret, c.FlowConfig.Scopes, "http://localhost:9555/callback", c.ServerConfig.DiscoveryEndpoint, c.ServerConfig.AuthorizationEndpoint, c.ServerConfig.TokenEndpoint, c.FlowConfig.PKCE)
+	HandleOpenIDFlow(c.Config.ClientID, c.Config.ClientSecret, c.FlowConfig.Scopes, "http://localhost:9555/callback", c.Config.DiscoveryEndpoint, c.Config.AuthorizationEndpoint, c.Config.TokenEndpoint, c.FlowConfig.PKCE)
 	return nil
 }

@@ -12,15 +12,13 @@ func TestParseAuthorizationCodeFlagsResult(t *testing.T) {
 	var tests = []struct {
 		name string
 		args []string
-		serverConf oidc.ServerConfig
-		clientConf oidc.ClientConfig
-		scopes string
-		callbackURI string
-		pkce bool
+		oidcConf oidc.Config
+		flowConf oidc.AuthorizationCodeFlowConfig
 	}{
 		{
 			"all flags",
 			[]string{
+				"--issuer", "https://example.com",
 				"--discovery-url", "https://example.com/.well-known/openid-configuration",
 				"--authorization-url", "https://example.com/authorize",
 				"--token-url", "https://example.com/token",
@@ -29,148 +27,155 @@ func TestParseAuthorizationCodeFlagsResult(t *testing.T) {
 				"--scopes", "openid profile email",
 				"--callback-uri", "http://localhost:8080/callback",
 			},
-			oidc.ServerConfig{
+			oidc.Config{
+				IssuerUrl: "https://example.com",
 				DiscoveryEndpoint: "https://example.com/.well-known/openid-configuration",
 				AuthorizationEndpoint: "https://example.com/authorize",
 				TokenEndpoint: "https://example.com/token",
-			},
-			oidc.ClientConfig{
 				ClientID: "client-id",
 				ClientSecret: "client-secret",
 			},
-			"openid profile email",
-			"http://localhost:8080/callback",
-			false,
+			oidc.AuthorizationCodeFlowConfig{
+				Scopes: "openid profile email",
+				CallbackURI: "http://localhost:8080/callback",
+				PKCE: false,
+			},
 		},
 		{
-			"only discovery-url",
+			"only issuer",
 			[]string{
-				"--discovery-url", "https://example.com/.well-known/openid-configuration",
+				"--issuer", "https://example.com",
 				"--client-id", "client-id",
 				"--client-secret", "client-secret",
 				"--scopes", "openid profile email",
 				"--callback-uri", "http://localhost:8080/callback",
 			},
-			oidc.ServerConfig{
-				DiscoveryEndpoint: "https://example.com/.well-known/openid-configuration",
+			oidc.Config{
+				IssuerUrl: "https://example.com",
+				DiscoveryEndpoint: "",
 				AuthorizationEndpoint: "",
 				TokenEndpoint: "",
-			},
-			oidc.ClientConfig{
 				ClientID: "client-id",
 				ClientSecret: "client-secret",
 			},
-			"openid profile email",
-			"http://localhost:8080/callback",
-			false,
+			oidc.AuthorizationCodeFlowConfig{
+				Scopes: "openid profile email",
+				CallbackURI: "http://localhost:8080/callback",
+				PKCE: false,
+			},
 		},
 		{
 			"no scopes provided",
 			[]string{
-				"--discovery-url", "https://example.com/.well-known/openid-configuration",
+				"--issuer", "https://example.com",
 				"--client-id", "client-id",
 				"--client-secret", "client-secret",
 				"--callback-uri", "http://localhost:8080/callback",
 			},
-			oidc.ServerConfig{
-				DiscoveryEndpoint: "https://example.com/.well-known/openid-configuration",
+			oidc.Config{
+				IssuerUrl: "https://example.com",
+				DiscoveryEndpoint: "",
 				AuthorizationEndpoint: "",
 				TokenEndpoint: "",
-			},
-			oidc.ClientConfig{
 				ClientID: "client-id",
 				ClientSecret: "client-secret",
 			},
-			"openid",
-			"http://localhost:8080/callback",
-			false,
+			oidc.AuthorizationCodeFlowConfig{
+				Scopes: "openid",
+				CallbackURI: "http://localhost:8080/callback",
+				PKCE: false,
+			},
 		},
 		{
 			"no callback-uri provided",
 			[]string{
-				"--discovery-url", "https://example.com/.well-known/openid-configuration",
+				"--issuer", "https://example.com",
 				"--client-id", "client-id",
 				"--client-secret", "client-secret",
 				"--scopes", "openid profile email",
 			},
-			oidc.ServerConfig{
-				DiscoveryEndpoint: "https://example.com/.well-known/openid-configuration",
+			oidc.Config{
+				IssuerUrl: "https://example.com",
+				DiscoveryEndpoint: "",
 				AuthorizationEndpoint: "",
 				TokenEndpoint: "",
-			},
-			oidc.ClientConfig{
 				ClientID: "client-id",
 				ClientSecret: "client-secret",
 			},
-			"openid profile email",
-			"http://localhost:9555/callback",
-			false,
+			oidc.AuthorizationCodeFlowConfig{
+				Scopes: "openid profile email",
+				CallbackURI: "http://localhost:9555/callback",
+				PKCE: false,
+			},
 		},
 		{
 			"client-secret and pkce",
 			[]string{
-				"--discovery-url", "https://example.com/.well-known/openid-configuration",
+				"--issuer", "https://example.com",
 				"--client-id", "client-id",
 				"--client-secret", "client-secret",
 				"--scopes", "openid profile email",
 				"--pkce", 
 			},
-			oidc.ServerConfig{
-				DiscoveryEndpoint: "https://example.com/.well-known/openid-configuration",
+			oidc.Config{
+				IssuerUrl: "https://example.com",
+				DiscoveryEndpoint: "",
 				AuthorizationEndpoint: "",
 				TokenEndpoint: "",
-			},
-			oidc.ClientConfig{
 				ClientID: "client-id",
 				ClientSecret: "client-secret",
 			},
-			"openid profile email",
-			"http://localhost:9555/callback",
-			true,
+			oidc.AuthorizationCodeFlowConfig{
+				Scopes: "openid profile email",
+				CallbackURI: "http://localhost:9555/callback",
+				PKCE: true,
+			},
 		},
 		{
 			"no client-secret and pkce",
 			[]string{
-				"--discovery-url", "https://example.com/.well-known/openid-configuration",
+				"--issuer", "https://example.com",
 				"--client-id", "client-id",
 				"--scopes", "openid profile email",
 				"--pkce",
 			},
-			oidc.ServerConfig{
-				DiscoveryEndpoint: "https://example.com/.well-known/openid-configuration",
+			oidc.Config{
+				IssuerUrl: "https://example.com",
+				DiscoveryEndpoint: "",
 				AuthorizationEndpoint: "",
 				TokenEndpoint: "",
-			},
-			oidc.ClientConfig{
 				ClientID: "client-id",
 				ClientSecret: "",
 			},
-			"openid profile email",
-			"http://localhost:9555/callback",
-			true,
+			oidc.AuthorizationCodeFlowConfig{
+				Scopes: "openid profile email",
+				CallbackURI: "http://localhost:9555/callback",
+				PKCE: true,
+			},
 		},
 		{
 			"flags after non-flag argument",
 			[]string{
-				"--discovery-url", "https://example.com/.well-known/openid-configuration",
+				"--issuer", "https://example.com",
 				"--client-id", "client-id",
 				"--client-secret", "client-secret",
 				"non-flag-argument",
 				"--scopes", "openid profile email",
 				"--callback-uri", "http://localhost:8080/callback",
 			},
-			oidc.ServerConfig{
-				DiscoveryEndpoint: "https://example.com/.well-known/openid-configuration",
+			oidc.Config{
+				IssuerUrl: "https://example.com",
+				DiscoveryEndpoint: "",
 				AuthorizationEndpoint: "",
 				TokenEndpoint: "",
-			},
-			oidc.ClientConfig{
 				ClientID: "client-id",
 				ClientSecret: "client-secret",
 			},
-			"openid", // expecting default value as argument is not parsed
-			"http://localhost:9555/callback", // expecting default value as argument is not parsed
-			false,
+			oidc.AuthorizationCodeFlowConfig{
+				Scopes: "openid", // expecting default value as argument is not parsed
+				CallbackURI: "http://localhost:9555/callback", // expecting default value as argument is not parsed
+				PKCE: false,
+			},
 		},
 	}
 		
@@ -187,17 +192,11 @@ func TestParseAuthorizationCodeFlagsResult(t *testing.T) {
 			if !ok {
 				t.Errorf("unexpected runner type: %T", runner)
 			}
-			if !reflect.DeepEqual(*f.ServerConfig, tt.serverConf) {
-				t.Errorf("ServerConfig got %+v, want %+v", *f.ServerConfig, tt.serverConf)
+			if !reflect.DeepEqual(*f.Config, tt.oidcConf) {
+				t.Errorf("Config got %+v, want %+v", *f.Config, tt.oidcConf)
 			}
-			if !reflect.DeepEqual(*f.ClientConfig, tt.clientConf) {
-				t.Errorf("ClientConfig got %+v, want %+v", *f.ClientConfig, tt.clientConf)
-			}
-			if f.FlowConfig.Scopes != tt.scopes {
-				t.Errorf("Scopes got %q, want %q", f.FlowConfig.Scopes, tt.scopes)
-			}
-			if f.FlowConfig.CallbackURI != tt.callbackURI {
-				t.Errorf("CallbackURI got %q, want %q", f.FlowConfig.CallbackURI, tt.callbackURI)
+			if !reflect.DeepEqual(*f.FlowConfig, tt.flowConf) {
+				t.Errorf("OIDCConfig got %+v, want %+v", *f.FlowConfig, tt.flowConf)
 			}
 		})
 	}
@@ -210,7 +209,7 @@ func TestParseAuthorizationCodeFlagsError(t *testing.T) {
 		args []string
 	}{
 		{
-			"missing discovery-url, authorization-url and token-url",
+			"missing issuer",
 			[]string{
 				"--client-id", "client-id",
 				"--client-secret", "client-secret",
@@ -221,7 +220,7 @@ func TestParseAuthorizationCodeFlagsError(t *testing.T) {
 		{
 			"missing client-secret and pkce",
 			[]string{
-				"--discovery-url", "https://example.com/.well-known/openid-configuration",
+				"--issuer", "https://example.com",
 				"--client-id", "client-id",
 				"--scopes", "openid profile email",
 				"--callback-uri", "http://localhost:8080/callback",
