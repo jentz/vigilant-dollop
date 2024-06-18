@@ -51,3 +51,13 @@ brews:
     repository:
       owner: jentz
       name: homebrew-vigilant-dollop
+
+scoops:
+  - name: oidc-cli
+    description: Command-line OIDC client, get a token without all the fuss
+    directory: bucket
+    homepage: https://github.com/jentz/vigilant-dollop
+    license: MIT
+    repository:
+      owner: jentz
+      name: scoop-vigilant-dollop
