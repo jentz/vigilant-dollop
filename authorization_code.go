@@ -1,14 +1,14 @@
 package oidc
 
 type AuthorizationCodeFlow struct {
-	Config *Config
+	Config     *Config
 	FlowConfig *AuthorizationCodeFlowConfig
 }
 
 type AuthorizationCodeFlowConfig struct {
 	Scopes      string
 	CallbackURI string
-	PKCE		bool
+	PKCE        bool
 }
 
 func (c *AuthorizationCodeFlow) Run() error {
