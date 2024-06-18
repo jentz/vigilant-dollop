@@ -13,7 +13,6 @@ import (
 	"net/http"
 	"net/url"
 	"os"
-	"os/exec"
 	"strings"
 	"time"
 )
@@ -111,10 +110,9 @@ func HandleOpenIDFlow(clientID, clientSecret, scopes, callbackURL, discoveryEndp
 	authURL.RawQuery = query.Encode()
 
 	fmt.Fprintf(os.Stderr, "authURL is %s\n", authURL.String())
-	cmd := exec.Command("open", authURL.String())
-	err := cmd.Start()
+	err := OpenURL(authURL.String())
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "unable to open browser, visit %s to continue\n", authURL.String())
+		fmt.Fprintf(os.Stderr, "unable to open browser because %v, visit %s to continue\n", err, authURL.String())
 	}
 
 	go func() {
