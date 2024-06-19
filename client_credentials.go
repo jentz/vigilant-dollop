@@ -23,16 +23,17 @@ func (c *ClientCredentialsFlow) Run() error {
 		return err
 	}
 
-	val := TokenValidation{
-		Token: 			  resp.AccessToken,
-		JWKSEndpoint: 	  c.Config.JWKSEndpoint,
-		ExpectedAudience: c.Config.ClientID,
-		ExpectedIssuer:   c.Config.IssuerUrl,
-		ExpectedScope: 	  req.Scope,
-	}
-	err = val.Validate()
-	if (err != nil) {
-		return err
+	jwt, err := ParseJwt(resp.AccessToken)
+	if (err == nil) {
+		expectedClaims := map[string]interface{}{
+			"aud":   c.Config.ClientID,
+			"iss":   c.Config.IssuerUrl,
+		}
+		err = jwt.ValidateClaims(expectedClaims)
+		if (err != nil) {
+			return err
+		}
+		// Todo: validate the signature
 	}
 
 	jsonStr, err := resp.JSON()
