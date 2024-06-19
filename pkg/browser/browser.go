@@ -1,4 +1,4 @@
-package oidc
+package browser
 
 import "os/exec"
 
