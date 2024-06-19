@@ -38,3 +38,14 @@ func (c *Config) DiscoverEndpoints() {
     assignIfEmpty(&c.UserinfoEndpoint, discoveryJson["userinfo_endpoint"].(string))
     assignIfEmpty(&c.JWKSEndpoint, discoveryJson["jwks_uri"].(string))
 }
+
+type CustomArgs []string
+
+func (c *CustomArgs) String() string {
+	return ""
+}
+
+func (c *CustomArgs) Set(value string) error {
+	*c = append(*c, value)
+	return nil
+}
