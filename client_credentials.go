@@ -12,14 +12,14 @@ func (c *ClientCredentialsFlow) Run() error {
 	c.Config.DiscoverEndpoints()
 
 	req := TokenRequest{
-		Endpoint: 		  c.Config.TokenEndpoint,
-		GrantType: 		  "client_credentials",
-		ClientID: 		  c.Config.ClientID,
-		ClientSecret: 	  c.Config.ClientSecret,
+		Endpoint:     c.Config.TokenEndpoint,
+		GrantType:    "client_credentials",
+		ClientID:     c.Config.ClientID,
+		ClientSecret: c.Config.ClientSecret,
 	}
 
 	resp, err := req.Execute()
-	if (err != nil) {
+	if err != nil {
 		return err
 	}
 

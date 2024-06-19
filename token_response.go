@@ -5,12 +5,12 @@ import (
 )
 
 type TokenResponse struct {
-	AccessToken  		string `json:"access_token"`
-	TokenType    		string `json:"token_type"`
-	ExpiresIn    		int    `json:"expires_in"`
-	RefreshToken 		string `json:"refresh_token"`
-	Scope        		string `json:"scope"`
-	IDToken      		string `json:"id_token"`
+	AccessToken  string `json:"access_token"`
+	TokenType    string `json:"token_type"`
+	ExpiresIn    int    `json:"expires_in"`
+	RefreshToken string `json:"refresh_token"`
+	Scope        string `json:"scope"`
+	IDToken      string `json:"id_token"`
 }
 
 func (tResp *TokenResponse) JSON() (string, error) {

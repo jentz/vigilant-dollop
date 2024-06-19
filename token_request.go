@@ -9,24 +9,24 @@ import (
 )
 
 type TokenRequest struct {
-	Endpoint 	 string
+	Endpoint     string
 	GrantType    string
 	Code         string
 	RedirectURI  string
-	Scope		 string
+	Scope        string
 	ClientID     string
 	ClientSecret string
-	Username	 string
-	Password	 string
+	Username     string
+	Password     string
 }
 
 func (tReq *TokenRequest) Execute() (tResp *TokenResponse, err error) {
 	vals := url.Values{}
 	vals.Set("grant_type", tReq.GrantType)
 	vals.Set("client_id", tReq.ClientID)
-	if (tReq.GrantType == "client_credentials") {
+	if tReq.GrantType == "client_credentials" {
 		vals.Set("client_secret", tReq.ClientSecret)
-	} else{
+	} else {
 		return nil, errors.New("grant type not implemented yet")
 	}
 
