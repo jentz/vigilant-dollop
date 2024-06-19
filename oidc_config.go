@@ -36,3 +36,14 @@ func (c *Config) DiscoverEndpoints() {
 	assignIfEmpty(&c.IntrospectionEndpoint, discoveryJson["introspection_endpoint"].(string))
 	assignIfEmpty(&c.UserinfoEndpoint, discoveryJson["userinfo_endpoint"].(string))
 }
+
+type CustomArgs []string
+
+func (c *CustomArgs) String() string {
+	return ""
+}
+
+func (c *CustomArgs) Set(value string) error {
+	*c = append(*c, value)
+	return nil
+}

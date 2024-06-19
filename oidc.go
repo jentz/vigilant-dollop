@@ -64,7 +64,7 @@ func calculateCodeChallenge(codeVerifier string) string {
 	return base64.RawURLEncoding.EncodeToString(sha[:])
 }
 
-func HandleOpenIDFlow(clientID, clientSecret, scopes, callbackURL, discoveryEndpoint, authorizationEndpoint, tokenEndpoint string, usePKCE bool) {
+func HandleOpenIDFlow(clientID, clientSecret, scopes, callbackURL, discoveryEndpoint, authorizationEndpoint, tokenEndpoint string, customArgs CustomArgs, usePKCE bool) {
 
 	callbackEndpoint := &callbackEndpoint{}
 	callbackEndpoint.shutdownSignal = make(chan string)
@@ -98,6 +98,11 @@ func HandleOpenIDFlow(clientID, clientSecret, scopes, callbackURL, discoveryEndp
 	query.Set("response_type", "code")
 	query.Set("scope", scopes)
 	query.Set("redirect_uri", callbackURL)
+
+	for _, arg := range customArgs {
+		kv := strings.SplitN(arg, "=", 2)
+		query.Set(kv[0], kv[1])
+	}
 
 	var codeVerifier string
 	if usePKCE {
