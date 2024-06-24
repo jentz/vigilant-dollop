@@ -15,6 +15,7 @@ type Config struct {
 	TokenEndpoint         string
 	IntrospectionEndpoint string
 	UserinfoEndpoint      string
+	JWKSEndpoint          string
 }
 
 func assignIfEmpty(a *string, b string) {
@@ -35,6 +36,7 @@ func (c *Config) DiscoverEndpoints() {
 	assignIfEmpty(&c.TokenEndpoint, discoveryJson["token_endpoint"].(string))
 	assignIfEmpty(&c.IntrospectionEndpoint, discoveryJson["introspection_endpoint"].(string))
 	assignIfEmpty(&c.UserinfoEndpoint, discoveryJson["userinfo_endpoint"].(string))
+	assignIfEmpty(&c.JWKSEndpoint, discoveryJson["jwks_uri"].(string))
 }
 
 type CustomArgs []string
