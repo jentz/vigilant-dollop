@@ -15,7 +15,7 @@ func parseIntrospectFlags(name string, args []string) (runner CommandRunner, out
 	var oidcConf oidc.Config
 	flags.StringVar(&oidcConf.IssuerUrl, "issuer", "", "set issuer url (required)")
 	flags.StringVar(&oidcConf.DiscoveryEndpoint, "discovery-url", "", "override discovery url")
-	flags.StringVar(&oidcConf.IntrospectionEndpoint, "token-url", "", "override token url")
+	flags.StringVar(&oidcConf.IntrospectionEndpoint, "introspection-url", "", "override introspection url")
 	flags.StringVar(&oidcConf.ClientID, "client-id", "", "set client ID (required)")
 	flags.StringVar(&oidcConf.ClientSecret, "client-secret", "", "set client secret (required unless bearer token is provided)")
 
@@ -25,7 +25,7 @@ func parseIntrospectFlags(name string, args []string) (runner CommandRunner, out
 	flags.StringVar(&flowConf.TokenTypeHint, "token-type", "access_token", "token type hint (e.g. access_token")
 
 	runner = &oidc.IntrospectFlow{
-		Config: &oidcConf,
+		Config:     &oidcConf,
 		FlowConfig: &flowConf,
 	}
 
@@ -47,8 +47,8 @@ func parseIntrospectFlags(name string, args []string) (runner CommandRunner, out
 			"client-id is required",
 		},
 		{
-			(oidcConf.ClientSecret == ""),
-			"client-secret is required",
+			(oidcConf.ClientSecret == "" && flowConf.BearerToken == ""),
+			"client-secret or bearer-token is required",
 		},
 	}
 

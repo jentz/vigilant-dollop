@@ -9,8 +9,8 @@ import (
 )
 
 type IntrospectionRequest struct {
-	Endpoint 	  string
-	Token 		  string
+	Endpoint      string
+	Token         string
 	TokenTypeHint string
 	ClientID      string
 	ClientSecret  string
@@ -39,7 +39,7 @@ func (tReq *IntrospectionRequest) Execute() (tResp *IntrospectionResponse, err e
 	dec := json.NewDecoder(resp.Body)
 	err = dec.Decode(&tResp)
 	if err != nil {
-		return nil, errors.New("failed to parse token response")
+		return nil, errors.New("failed to parse introspection response")
 	}
 
 	return tResp, nil
