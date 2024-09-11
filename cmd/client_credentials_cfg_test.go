@@ -8,11 +8,12 @@ import (
 )
 
 func TestParseClientCredentialsFlagsResult(t *testing.T) {
-	
+
 	var tests = []struct {
-		name string
-		args []string
+		name     string
+		args     []string
 		oidcConf oidc.Config
+		flowConf oidc.ClientCredentialsFlowConfig
 	}{
 		{
 			"all flags",
@@ -24,11 +25,14 @@ func TestParseClientCredentialsFlagsResult(t *testing.T) {
 				"--client-secret", "client-secret",
 			},
 			oidc.Config{
-				IssuerUrl: "https://example.com",
+				IssuerUrl:         "https://example.com",
 				DiscoveryEndpoint: "https://example.com/.well-known/openid-configuration",
-				TokenEndpoint: "https://example.com/token",
-				ClientID: "client-id",
-				ClientSecret: "client-secret",
+				TokenEndpoint:     "https://example.com/token",
+				ClientID:          "client-id",
+				ClientSecret:      "client-secret",
+			},
+			oidc.ClientCredentialsFlowConfig{
+				Scopes: "",
 			},
 		},
 		{
@@ -39,32 +43,39 @@ func TestParseClientCredentialsFlagsResult(t *testing.T) {
 				"--client-secret", "client-secret",
 			},
 			oidc.Config{
-				IssuerUrl: "https://example.com",
-				DiscoveryEndpoint: "",
+				IssuerUrl:             "https://example.com",
+				DiscoveryEndpoint:     "",
 				AuthorizationEndpoint: "",
-				TokenEndpoint: "",
-				ClientID: "client-id",
-				ClientSecret: "client-secret",
+				TokenEndpoint:         "",
+				ClientID:              "client-id",
+				ClientSecret:          "client-secret",
+			},
+			oidc.ClientCredentialsFlowConfig{
+				Scopes: "",
 			},
 		},
 		{
-			"no scopes provided",
+			"scopes provided",
 			[]string{
 				"--issuer", "https://example.com",
 				"--client-id", "client-id",
 				"--client-secret", "client-secret",
+				"--scopes", "expected",
 			},
 			oidc.Config{
-				IssuerUrl: "https://example.com",
-				DiscoveryEndpoint: "",
+				IssuerUrl:             "https://example.com",
+				DiscoveryEndpoint:     "",
 				AuthorizationEndpoint: "",
-				TokenEndpoint: "",
-				ClientID: "client-id",
-				ClientSecret: "client-secret",
+				TokenEndpoint:         "",
+				ClientID:              "client-id",
+				ClientSecret:          "client-secret",
+			},
+			oidc.ClientCredentialsFlowConfig{
+				Scopes: "expected",
 			},
 		},
 	}
-		
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			runner, output, err := parseClientCredentialsFlags("client_credentials", tt.args)
@@ -81,12 +92,15 @@ func TestParseClientCredentialsFlagsResult(t *testing.T) {
 			if !reflect.DeepEqual(*f.Config, tt.oidcConf) {
 				t.Errorf("Config got %+v, want %+v", *f.Config, tt.oidcConf)
 			}
+			if !reflect.DeepEqual(*f.FlowConfig, tt.flowConf) {
+				t.Errorf("FlowConfig got %+v, want %+v", *f.FlowConfig, tt.flowConf)
+			}
 		})
 	}
 }
 
 func TestParseClientCredentialsFlagsError(t *testing.T) {
-	
+
 	var tests = []struct {
 		name string
 		args []string
@@ -107,7 +121,7 @@ func TestParseClientCredentialsFlagsError(t *testing.T) {
 			},
 		},
 	}
-		
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			_, output, err := parseClientCredentialsFlags("client_credentials", tt.args)

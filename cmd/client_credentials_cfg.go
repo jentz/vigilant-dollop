@@ -19,8 +19,12 @@ func parseClientCredentialsFlags(name string, args []string) (runner CommandRunn
 	flags.StringVar(&oidcConf.ClientID, "client-id", "", "set client ID (required)")
 	flags.StringVar(&oidcConf.ClientSecret, "client-secret", "", "set client secret (required)")
 
+	var flowConf oidc.ClientCredentialsFlowConfig
+	flags.StringVar(&flowConf.Scopes, "scopes", "", "set scopes as a space separated list")
+
 	runner = &oidc.ClientCredentialsFlow{
-		Config: &oidcConf,
+		Config:     &oidcConf,
+		FlowConfig: &flowConf,
 	}
 
 	err = flags.Parse(args)
