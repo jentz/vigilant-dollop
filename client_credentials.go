@@ -5,7 +5,12 @@ import (
 )
 
 type ClientCredentialsFlow struct {
-	Config *Config
+	Config     *Config
+	FlowConfig *ClientCredentialsFlowConfig
+}
+
+type ClientCredentialsFlowConfig struct {
+	Scopes string
 }
 
 func (c *ClientCredentialsFlow) Run() error {
@@ -16,6 +21,10 @@ func (c *ClientCredentialsFlow) Run() error {
 		GrantType:    "client_credentials",
 		ClientID:     c.Config.ClientID,
 		ClientSecret: c.Config.ClientSecret,
+	}
+
+	if c.FlowConfig.Scopes != "" {
+		req.Scope = c.FlowConfig.Scopes
 	}
 
 	resp, err := req.Execute()

@@ -24,6 +24,11 @@ func (tReq *TokenRequest) Execute() (tResp *TokenResponse, err error) {
 	vals := url.Values{}
 	vals.Set("grant_type", tReq.GrantType)
 	vals.Set("client_id", tReq.ClientID)
+
+	if tReq.Scope != "" {
+		vals.Set("scope", tReq.Scope)
+	}
+
 	if tReq.GrantType == "client_credentials" {
 		vals.Set("client_secret", tReq.ClientSecret)
 	} else {
