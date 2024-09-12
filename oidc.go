@@ -8,7 +8,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"github.com/jentz/vigilant-dollop/pkg/browser"
+	"html/template"
 	"log"
 	"math/big"
 	"net/http"
@@ -16,6 +16,8 @@ import (
 	"os"
 	"strings"
 	"time"
+
+	"github.com/jentz/vigilant-dollop/pkg/browser"
 )
 
 type callbackEndpoint struct {
@@ -29,11 +31,16 @@ func (h *callbackEndpoint) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(os.Stderr, "callback URL %s\n", r.URL.String())
 
 	code := r.URL.Query().Get("code")
+	errorDescription := r.URL.Query().Get("error_description")
+	errorMsg := r.URL.Query().Get("error")
+
 	if code != "" {
 		h.code = code
-		fmt.Fprintln(w, "Login is successful, You may close the browser and return to the commandline")
+		tmpl, _ := template.ParseFiles("html/callback-success.html")
+		tmpl.Execute(w, nil)
 	} else {
-		fmt.Fprintln(w, "Login is not successful, You may close the browser and try again")
+		tmpl, _ := template.ParseFiles("html/callback-failure.html")
+		tmpl.Execute(w, map[string]string{ "errorMsg": errorMsg, "errorDescription": errorDescription })
 	}
 	h.shutdownSignal <- "shutdown"
 }
