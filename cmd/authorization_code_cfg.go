@@ -27,7 +27,7 @@ func parseAuthorizationCodeFlags(name string, args []string) (runner CommandRunn
 	flags.BoolVar(&flowConf.PKCE, "pkce", false, "use proof-key for code exchange (PKCE)")
 
 	runner = &oidc.AuthorizationCodeFlow{
-		Config: &oidcConf,
+		Config:     &oidcConf,
 		FlowConfig: &flowConf,
 	}
 
@@ -41,23 +41,23 @@ func parseAuthorizationCodeFlags(name string, args []string) (runner CommandRunn
 		message   string
 	}{
 		{
-			(oidcConf.IssuerUrl == ""),
+			oidcConf.IssuerUrl == "",
 			"issuer is required",
 		},
 		{
-			(oidcConf.ClientID == ""),
+			oidcConf.ClientID == "",
 			"client-id is required",
 		},
 		{
-			(oidcConf.ClientSecret == "" && !flowConf.PKCE),
+			oidcConf.ClientSecret == "" && !flowConf.PKCE,
 			"client-secret is required unless using PKCE",
 		},
 		{
-			(flowConf.Scopes == ""),
+			flowConf.Scopes == "",
 			"scopes are required",
 		},
 		{
-			(flowConf.CallbackURI == ""),
+			flowConf.CallbackURI == "",
 			"callback-uri is required",
 		},
 	}

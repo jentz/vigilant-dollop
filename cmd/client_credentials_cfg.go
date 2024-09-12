@@ -37,15 +37,15 @@ func parseClientCredentialsFlags(name string, args []string) (runner CommandRunn
 		message   string
 	}{
 		{
-			(oidcConf.IssuerUrl == ""),
+			oidcConf.IssuerUrl == "",
 			"issuer is required",
 		},
 		{
-			(oidcConf.ClientID == ""),
+			oidcConf.ClientID == "",
 			"client-id is required",
 		},
 		{
-			(oidcConf.ClientSecret == ""),
+			oidcConf.ClientSecret == "",
 			"client-secret is required",
 		},
 	}
