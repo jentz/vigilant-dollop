@@ -9,7 +9,7 @@ type AuthorizationCodeFlowConfig struct {
 	Scopes      string
 	CallbackURI string
 	CustomArgs  CustomArgs
-	PKCE		bool
+	PKCE        bool
 }
 
 func (c *AuthorizationCodeFlow) Run() error {

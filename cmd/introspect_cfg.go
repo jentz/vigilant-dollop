@@ -39,15 +39,15 @@ func parseIntrospectFlags(name string, args []string) (runner CommandRunner, out
 		message   string
 	}{
 		{
-			(oidcConf.IssuerUrl == ""),
+			oidcConf.IssuerUrl == "",
 			"issuer is required",
 		},
 		{
-			(oidcConf.ClientID == ""),
+			oidcConf.ClientID == "",
 			"client-id is required",
 		},
 		{
-			(oidcConf.ClientSecret == "" && flowConf.BearerToken == ""),
+			oidcConf.ClientSecret == "" && flowConf.BearerToken == "",
 			"client-secret or bearer-token is required",
 		},
 	}

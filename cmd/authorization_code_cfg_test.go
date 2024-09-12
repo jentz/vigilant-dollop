@@ -8,10 +8,10 @@ import (
 )
 
 func TestParseAuthorizationCodeFlagsResult(t *testing.T) {
-	
+
 	var tests = []struct {
-		name string
-		args []string
+		name     string
+		args     []string
 		oidcConf oidc.Config
 		flowConf oidc.AuthorizationCodeFlowConfig
 	}{
@@ -28,17 +28,17 @@ func TestParseAuthorizationCodeFlagsResult(t *testing.T) {
 				"--callback-uri", "http://localhost:8080/callback",
 			},
 			oidc.Config{
-				IssuerUrl: "https://example.com",
-				DiscoveryEndpoint: "https://example.com/.well-known/openid-configuration",
+				IssuerUrl:             "https://example.com",
+				DiscoveryEndpoint:     "https://example.com/.well-known/openid-configuration",
 				AuthorizationEndpoint: "https://example.com/authorize",
-				TokenEndpoint: "https://example.com/token",
-				ClientID: "client-id",
-				ClientSecret: "client-secret",
+				TokenEndpoint:         "https://example.com/token",
+				ClientID:              "client-id",
+				ClientSecret:          "client-secret",
 			},
 			oidc.AuthorizationCodeFlowConfig{
-				Scopes: "openid profile email",
+				Scopes:      "openid profile email",
 				CallbackURI: "http://localhost:8080/callback",
-				PKCE: false,
+				PKCE:        false,
 			},
 		},
 		{
@@ -51,17 +51,17 @@ func TestParseAuthorizationCodeFlagsResult(t *testing.T) {
 				"--callback-uri", "http://localhost:8080/callback",
 			},
 			oidc.Config{
-				IssuerUrl: "https://example.com",
-				DiscoveryEndpoint: "",
+				IssuerUrl:             "https://example.com",
+				DiscoveryEndpoint:     "",
 				AuthorizationEndpoint: "",
-				TokenEndpoint: "",
-				ClientID: "client-id",
-				ClientSecret: "client-secret",
+				TokenEndpoint:         "",
+				ClientID:              "client-id",
+				ClientSecret:          "client-secret",
 			},
 			oidc.AuthorizationCodeFlowConfig{
-				Scopes: "openid profile email",
+				Scopes:      "openid profile email",
 				CallbackURI: "http://localhost:8080/callback",
-				PKCE: false,
+				PKCE:        false,
 			},
 		},
 		{
@@ -73,17 +73,17 @@ func TestParseAuthorizationCodeFlagsResult(t *testing.T) {
 				"--callback-uri", "http://localhost:8080/callback",
 			},
 			oidc.Config{
-				IssuerUrl: "https://example.com",
-				DiscoveryEndpoint: "",
+				IssuerUrl:             "https://example.com",
+				DiscoveryEndpoint:     "",
 				AuthorizationEndpoint: "",
-				TokenEndpoint: "",
-				ClientID: "client-id",
-				ClientSecret: "client-secret",
+				TokenEndpoint:         "",
+				ClientID:              "client-id",
+				ClientSecret:          "client-secret",
 			},
 			oidc.AuthorizationCodeFlowConfig{
-				Scopes: "openid",
+				Scopes:      "openid",
 				CallbackURI: "http://localhost:8080/callback",
-				PKCE: false,
+				PKCE:        false,
 			},
 		},
 		{
@@ -95,17 +95,17 @@ func TestParseAuthorizationCodeFlagsResult(t *testing.T) {
 				"--scopes", "openid profile email",
 			},
 			oidc.Config{
-				IssuerUrl: "https://example.com",
-				DiscoveryEndpoint: "",
+				IssuerUrl:             "https://example.com",
+				DiscoveryEndpoint:     "",
 				AuthorizationEndpoint: "",
-				TokenEndpoint: "",
-				ClientID: "client-id",
-				ClientSecret: "client-secret",
+				TokenEndpoint:         "",
+				ClientID:              "client-id",
+				ClientSecret:          "client-secret",
 			},
 			oidc.AuthorizationCodeFlowConfig{
-				Scopes: "openid profile email",
+				Scopes:      "openid profile email",
 				CallbackURI: "http://localhost:9555/callback",
-				PKCE: false,
+				PKCE:        false,
 			},
 		},
 		{
@@ -115,20 +115,20 @@ func TestParseAuthorizationCodeFlagsResult(t *testing.T) {
 				"--client-id", "client-id",
 				"--client-secret", "client-secret",
 				"--scopes", "openid profile email",
-				"--pkce", 
+				"--pkce",
 			},
 			oidc.Config{
-				IssuerUrl: "https://example.com",
-				DiscoveryEndpoint: "",
+				IssuerUrl:             "https://example.com",
+				DiscoveryEndpoint:     "",
 				AuthorizationEndpoint: "",
-				TokenEndpoint: "",
-				ClientID: "client-id",
-				ClientSecret: "client-secret",
+				TokenEndpoint:         "",
+				ClientID:              "client-id",
+				ClientSecret:          "client-secret",
 			},
 			oidc.AuthorizationCodeFlowConfig{
-				Scopes: "openid profile email",
+				Scopes:      "openid profile email",
 				CallbackURI: "http://localhost:9555/callback",
-				PKCE: true,
+				PKCE:        true,
 			},
 		},
 		{
@@ -140,17 +140,17 @@ func TestParseAuthorizationCodeFlagsResult(t *testing.T) {
 				"--pkce",
 			},
 			oidc.Config{
-				IssuerUrl: "https://example.com",
-				DiscoveryEndpoint: "",
+				IssuerUrl:             "https://example.com",
+				DiscoveryEndpoint:     "",
 				AuthorizationEndpoint: "",
-				TokenEndpoint: "",
-				ClientID: "client-id",
-				ClientSecret: "",
+				TokenEndpoint:         "",
+				ClientID:              "client-id",
+				ClientSecret:          "",
 			},
 			oidc.AuthorizationCodeFlowConfig{
-				Scopes: "openid profile email",
+				Scopes:      "openid profile email",
 				CallbackURI: "http://localhost:9555/callback",
-				PKCE: true,
+				PKCE:        true,
 			},
 		},
 		{
@@ -164,21 +164,21 @@ func TestParseAuthorizationCodeFlagsResult(t *testing.T) {
 				"--callback-uri", "http://localhost:8080/callback",
 			},
 			oidc.Config{
-				IssuerUrl: "https://example.com",
-				DiscoveryEndpoint: "",
+				IssuerUrl:             "https://example.com",
+				DiscoveryEndpoint:     "",
 				AuthorizationEndpoint: "",
-				TokenEndpoint: "",
-				ClientID: "client-id",
-				ClientSecret: "client-secret",
+				TokenEndpoint:         "",
+				ClientID:              "client-id",
+				ClientSecret:          "client-secret",
 			},
 			oidc.AuthorizationCodeFlowConfig{
-				Scopes: "openid", // expecting default value as argument is not parsed
+				Scopes:      "openid",                         // expecting default value as argument is not parsed
 				CallbackURI: "http://localhost:9555/callback", // expecting default value as argument is not parsed
-				PKCE: false,
+				PKCE:        false,
 			},
 		},
 	}
-		
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			runner, output, err := parseAuthorizationCodeFlags("authorization_code", tt.args)
@@ -203,7 +203,7 @@ func TestParseAuthorizationCodeFlagsResult(t *testing.T) {
 }
 
 func TestParseAuthorizationCodeFlagsError(t *testing.T) {
-	
+
 	var tests = []struct {
 		name string
 		args []string
@@ -227,7 +227,7 @@ func TestParseAuthorizationCodeFlagsError(t *testing.T) {
 			},
 		},
 	}
-		
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			_, output, err := parseAuthorizationCodeFlags("authorization_code", tt.args)
