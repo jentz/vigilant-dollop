@@ -1,7 +1,7 @@
 package oidc
 
 import (
-	"encoding/json"
+	"context"
 	"log"
 	"net/http"
 )
@@ -25,18 +25,18 @@ func assignIfEmpty(a *string, b string) {
 }
 
 func (c *Config) DiscoverEndpoints() {
-	assignIfEmpty(&c.DiscoveryEndpoint, c.IssuerUrl+"/.well-known/openid-configuration")
-	resp, err := http.Get(c.DiscoveryEndpoint)
+	ctx := context.Background()
+	discoveryConfig, err := discover(ctx, c.IssuerUrl, http.DefaultClient, c.DiscoveryEndpoint)
+
 	if err != nil {
 		log.Fatal(err)
 	}
-	var discoveryJson map[string]interface{}
-	json.NewDecoder(resp.Body).Decode(&discoveryJson)
-	assignIfEmpty(&c.AuthorizationEndpoint, discoveryJson["authorization_endpoint"].(string))
-	assignIfEmpty(&c.TokenEndpoint, discoveryJson["token_endpoint"].(string))
-	assignIfEmpty(&c.IntrospectionEndpoint, discoveryJson["introspection_endpoint"].(string))
-	assignIfEmpty(&c.UserinfoEndpoint, discoveryJson["userinfo_endpoint"].(string))
-	assignIfEmpty(&c.JWKSEndpoint, discoveryJson["jwks_uri"].(string))
+
+	assignIfEmpty(&c.AuthorizationEndpoint, discoveryConfig.AuthorizationEndpoint)
+	assignIfEmpty(&c.TokenEndpoint, discoveryConfig.TokenEndpoint)
+	assignIfEmpty(&c.IntrospectionEndpoint, discoveryConfig.IntrospectionEndpoint)
+	assignIfEmpty(&c.UserinfoEndpoint, discoveryConfig.UserinfoEndpoint)
+	assignIfEmpty(&c.JWKSEndpoint, discoveryConfig.JwksURI)
 }
 
 type CustomArgs []string
