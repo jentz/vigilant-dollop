@@ -9,27 +9,39 @@ import (
 	"testing"
 )
 
-type roundTripperFunc func(req *http.Request) (*http.Response, error)
+type mockTransport func(req *http.Request) (*http.Response, error)
 
-func (f roundTripperFunc) RoundTrip(req *http.Request) (*http.Response, error) {
+func (f mockTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 	return f(req)
 }
 
-func Test_discover(t *testing.T) {
+const (
+	defaultBody = `{
+					"issuer": "https://example.com",
+					"authorization_endpoint": "https://example.com/auth",
+					"token_endpoint": "https://example.com/token",
+					"jwks_uri": "https://example.com/jwks"
+					}`
+)
+
+func TestDiscover(t *testing.T) {
 	type args struct {
 		ctx          context.Context
 		issuer       string
 		httpClient   *http.Client
 		wellKnownUrl []string
 	}
+	type httpRes struct {
+		body       string
+		statusCode int
+	}
 	tests := []struct {
-		name               string
-		args               args
-		want               *DiscoveryConfiguration
-		wantErr            bool
-		expectedBody       string
-		expectedStatusCode int
-		expectedURL        string
+		name    string
+		args    args
+		httpRes httpRes
+		want    *DiscoveryConfiguration
+		wantErr bool
+		wantURL string
 	}{
 		{
 			name: "simple",
@@ -38,6 +50,10 @@ func Test_discover(t *testing.T) {
 				issuer:     "https://example.com",
 				httpClient: http.DefaultClient,
 			},
+			httpRes: httpRes{
+				body:       defaultBody,
+				statusCode: http.StatusOK,
+			},
 			want: &DiscoveryConfiguration{
 				Issuer:                "https://example.com",
 				AuthorizationEndpoint: "https://example.com/auth",
@@ -45,14 +61,7 @@ func Test_discover(t *testing.T) {
 				JwksURI:               "https://example.com/jwks",
 			},
 			wantErr: false,
-			expectedBody: `{
-				"issuer": "https://example.com",
-				"authorization_endpoint": "https://example.com/auth",
-				"token_endpoint": "https://example.com/token",
-				"jwks_uri": "https://example.com/jwks"
-			}`,
-			expectedStatusCode: http.StatusOK,
-			expectedURL:        "https://example.com/.well-known/openid-configuration",
+			wantURL: "https://example.com/.well-known/openid-configuration",
 		},
 		{
 			name: "invalid issuer",
@@ -61,11 +70,13 @@ func Test_discover(t *testing.T) {
 				issuer:     "https://example.com",
 				httpClient: http.DefaultClient,
 			},
-			want:               nil,
-			wantErr:            true,
-			expectedBody:       `{"issuer": "https://invalid.com"}`,
-			expectedStatusCode: http.StatusOK,
-			expectedURL:        "https://example.com/.well-known/openid-configuration",
+			httpRes: httpRes{
+				body:       `{"issuer": "https://invalid.com"}`,
+				statusCode: http.StatusOK,
+			},
+			want:    nil,
+			wantErr: true,
+			wantURL: "https://example.com/.well-known/openid-configuration",
 		},
 		{
 			name: "override wellknown url",
@@ -75,6 +86,10 @@ func Test_discover(t *testing.T) {
 				httpClient:   http.DefaultClient,
 				wellKnownUrl: []string{"https://example.com/.well-known/override"},
 			},
+			httpRes: httpRes{
+				body:       defaultBody,
+				statusCode: http.StatusOK,
+			},
 			want: &DiscoveryConfiguration{
 				Issuer:                "https://example.com",
 				AuthorizationEndpoint: "https://example.com/auth",
@@ -82,14 +97,7 @@ func Test_discover(t *testing.T) {
 				JwksURI:               "https://example.com/jwks",
 			},
 			wantErr: false,
-			expectedBody: `{
-				"issuer": "https://example.com",
-				"authorization_endpoint": "https://example.com/auth",
-				"token_endpoint": "https://example.com/token",
-				"jwks_uri": "https://example.com/jwks"
-			}`,
-			expectedStatusCode: http.StatusOK,
-			expectedURL:        "https://example.com/.well-known/override",
+			wantURL: "https://example.com/.well-known/override",
 		},
 		{
 			name: "non 200 status code",
@@ -98,21 +106,23 @@ func Test_discover(t *testing.T) {
 				issuer:     "https://example.com",
 				httpClient: http.DefaultClient,
 			},
-			want:               nil,
-			wantErr:            true,
-			expectedBody:       `expected error`,
-			expectedStatusCode: http.StatusNotFound,
-			expectedURL:        "https://example.com/.well-known/openid-configuration",
+			httpRes: httpRes{
+				body:       "expected error",
+				statusCode: http.StatusNotFound,
+			},
+			want:    nil,
+			wantErr: true,
+			wantURL: "https://example.com/.well-known/openid-configuration",
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			var capturedRequest *http.Request
-			tt.args.httpClient.Transport = roundTripperFunc(func(req *http.Request) (*http.Response, error) {
+			tt.args.httpClient.Transport = mockTransport(func(req *http.Request) (*http.Response, error) {
 				capturedRequest = req
 				return &http.Response{
-					StatusCode: tt.expectedStatusCode,
-					Body:       io.NopCloser(bytes.NewBufferString(tt.expectedBody)),
+					StatusCode: tt.httpRes.statusCode,
+					Body:       io.NopCloser(bytes.NewBufferString(tt.httpRes.body)),
 				}, nil
 			})
 			got, err := discover(tt.args.ctx, tt.args.issuer, tt.args.httpClient, tt.args.wellKnownUrl...)
@@ -123,8 +133,8 @@ func Test_discover(t *testing.T) {
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("discover() got = %v, want %v", got, tt.want)
 			}
-			if capturedRequest.URL.String() != tt.expectedURL {
-				t.Errorf("expected URL = %v, got %v", tt.expectedURL, capturedRequest.URL.String())
+			if capturedRequest.URL.String() != tt.wantURL {
+				t.Errorf("discover() got = %v, want URL = %v", capturedRequest.URL.String(), tt.wantURL)
 			}
 		})
 	}
