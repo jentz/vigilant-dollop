@@ -12,8 +12,14 @@ type AuthorizationCodeFlow struct {
 type AuthorizationCodeFlowConfig struct {
 	Scopes      string
 	CallbackURI string
-	CustomArgs  CustomArgs
+	Prompt      string
+	AcrValues   string
+	LoginHint   string
+	MaxAge      string
+	UILocales   string
+	State       string
 	PKCE        bool
+	CustomArgs  CustomArgs
 }
 
 func (c *AuthorizationCodeFlow) Run() error {
@@ -21,11 +27,15 @@ func (c *AuthorizationCodeFlow) Run() error {
 
 	aReq := AuthorizationRequest{
 		ResponseType: "code",
-		Endpoint:     c.Config.AuthorizationEndpoint,
 		ClientID:     c.Config.ClientID,
 		Scope:        c.FlowConfig.Scopes,
 		RedirectURI:  c.FlowConfig.CallbackURI,
-		CustomArgs:   c.FlowConfig.CustomArgs,
+		Prompt:       c.FlowConfig.Prompt,
+		AcrValues:    c.FlowConfig.AcrValues,
+		LoginHint:    c.FlowConfig.LoginHint,
+		MaxAge:       c.FlowConfig.MaxAge,
+		UILocales:    c.FlowConfig.UILocales,
+		State:        c.FlowConfig.State,
 	}
 
 	var codeVerifier string
@@ -36,7 +46,7 @@ func (c *AuthorizationCodeFlow) Run() error {
 		aReq.CodeChallengeMethod = "S256"
 	}
 
-	aResp, err := aReq.Execute()
+	aResp, err := aReq.Execute(c.Config.AuthorizationEndpoint, c.FlowConfig.CustomArgs...)
 	if err != nil {
 		return err
 	}

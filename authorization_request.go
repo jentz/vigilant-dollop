@@ -6,57 +6,55 @@ import (
 	"os"
 	"strings"
 
+	"github.com/gorilla/schema"
 	"github.com/jentz/vigilant-dollop/pkg/browser"
 )
 
 type AuthorizationRequest struct {
-	Endpoint            string
-	CustomArgs          []string
-	ResponseType        string
-	ClientID            string
-	RedirectURI         string
-	Scope               string
-	State               string
-	CodeChallengeMethod string
-	CodeChallenge       string
-	RequestURL          string
+	ResponseType        string `schema:"response_type"`
+	ClientID            string `schema:"client_id"`
+	RedirectURI         string `schema:"redirect_uri"`
+	Scope               string `schema:"scope"`
+	Prompt              string `schema:"prompt,omitempty"`
+	AcrValues           string `schema:"acr_values,omitempty"`
+	LoginHint           string `schema:"login_hint,omitempty"`
+	MaxAge              string `schema:"max_age,omitempty"`
+	UILocales           string `schema:"ui_locales,omitempty"`
+	State               string `schema:"state,omitempty"`
+	CodeChallengeMethod string `schema:"code_challenge_method,omitempty"`
+	CodeChallenge       string `schema:"code_challenge,omitempty"`
 }
 
-func (aReq *AuthorizationRequest) URL() string {
-	return aReq.RequestURL
-}
+func (aReq *AuthorizationRequest) Execute(authEndpoint string, customArgs ...string) (aResp *AuthorizationResponse, err error) {
 
-func (aReq *AuthorizationRequest) Execute() (aResp *AuthorizationResponse, err error) {
 	callbackEndpoint := &callbackEndpoint{}
 	callbackEndpoint.start()
 
-	authURL, err := url.Parse(aReq.Endpoint)
+	authURL, err := url.Parse(authEndpoint)
 	if err != nil {
 		return nil, err
 	}
-	query := authURL.Query()
-	query.Set("client_id", aReq.ClientID)
-	query.Set("response_type", aReq.ResponseType)
-	query.Set("scope", aReq.Scope)
-	query.Set("redirect_uri", aReq.RedirectURI)
 
-	if aReq.CodeChallenge != "" && aReq.CodeChallengeMethod != "" {
-		query.Set("code_challenge", aReq.CodeChallenge)
-		query.Set("code_challenge_method", aReq.CodeChallengeMethod)
+	encoder := schema.NewEncoder()
+	query := authURL.Query()
+	err = encoder.Encode(aReq, query)
+	if err != nil {
+		return nil, err
 	}
 
-	for _, arg := range aReq.CustomArgs {
+	// Add custom args to the query string
+	for _, arg := range customArgs {
 		kv := strings.SplitN(arg, "=", 2)
 		query.Set(kv[0], kv[1])
 	}
 
 	authURL.RawQuery = query.Encode()
-	aReq.RequestURL = authURL.String()
-	fmt.Fprintf(os.Stderr, "authorization request: %s\n", aReq.RequestURL)
+	requestURL := authURL.String()
+	fmt.Fprintf(os.Stderr, "authorization request: %s\n", requestURL)
 
-	err = browser.OpenURL(aReq.RequestURL)
+	err = browser.OpenURL(requestURL)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "unable to open browser because %v, visit %s to continue\n", err, aReq.RequestURL)
+		fmt.Fprintf(os.Stderr, "unable to open browser because %v, visit %s to continue\n", err, requestURL)
 	}
 
 	<-callbackEndpoint.shutdownSignal
