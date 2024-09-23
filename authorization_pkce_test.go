@@ -4,7 +4,7 @@ import (
 	"testing"
 )
 
-func TestGenerateCodeVerifier(t *testing.T) {
+func TestPkceCodeVerifier(t *testing.T) {
 	var tests = []struct {
 		name          string
 		generateBytes int
@@ -23,10 +23,10 @@ func TestGenerateCodeVerifier(t *testing.T) {
 			defer func() {
 				r := recover()
 				if (r != nil) != tt.wantPanic {
-					t.Errorf("generateCodeVerifier() recover = %v, wantPanic = %v", r, tt.wantPanic)
+					t.Errorf("pkceCodeVerifier() recover = %v, wantPanic = %v", r, tt.wantPanic)
 				}
 			}()
-			gotBytes := len(generateCodeVerifier(tt.generateBytes))
+			gotBytes := len(pkceCodeVerifier(tt.generateBytes))
 			if gotBytes != tt.wantBytes {
 				t.Errorf("err got %v, want %v", gotBytes, tt.wantBytes)
 			}
