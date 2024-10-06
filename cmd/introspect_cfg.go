@@ -1,8 +1,10 @@
 package main
 
 import (
+	"bufio"
 	"bytes"
 	"flag"
+	"os"
 
 	oidc "github.com/jentz/vigilant-dollop"
 )
@@ -21,7 +23,7 @@ func parseIntrospectFlags(name string, args []string) (runner CommandRunner, out
 
 	var flowConf oidc.IntrospectFlowConfig
 	flags.StringVar(&flowConf.BearerToken, "bearer-token", "", "bearer token for authorization (required unless client secret is provided)")
-	flags.StringVar(&flowConf.Token, "token", "", "token to be introspected (required)")
+	flags.StringVar(&flowConf.Token, "token", "", "token to be introspected or '-' to read token from stdin (required)")
 	flags.StringVar(&flowConf.TokenTypeHint, "token-type", "access_token", "token type hint (e.g. access_token")
 
 	runner = &oidc.IntrospectFlow{
@@ -32,6 +34,13 @@ func parseIntrospectFlags(name string, args []string) (runner CommandRunner, out
 	err = flags.Parse(args)
 	if err != nil {
 		return nil, buf.String(), err
+	}
+
+	// Read token from stdin if token equals '-'
+	if flowConf.Token == "-" {
+		scanner := bufio.NewScanner(os.Stdin)
+		scanner.Scan()
+		flowConf.Token = scanner.Text()
 	}
 
 	var invalidArgsChecks = []struct {
@@ -49,6 +58,10 @@ func parseIntrospectFlags(name string, args []string) (runner CommandRunner, out
 		{
 			oidcConf.ClientSecret == "" && flowConf.BearerToken == "",
 			"client-secret or bearer-token is required",
+		},
+		{
+			flowConf.Token == "",
+			"token is required",
 		},
 	}
 
