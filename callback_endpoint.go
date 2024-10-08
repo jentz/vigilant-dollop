@@ -2,12 +2,16 @@ package oidc
 
 import (
 	"context"
+	"embed"
 	"fmt"
 	"html/template"
 	"net/http"
 	"os"
 	"time"
 )
+
+//go:embed html/*
+var content embed.FS
 
 type callbackEndpoint struct {
 	server           *http.Server
@@ -48,11 +52,37 @@ func (h *callbackEndpoint) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	h.errorMsg = r.URL.Query().Get("error")
 
 	if h.code != "" {
-		tmpl, _ := template.ParseFiles("html/callback-success.html")
-		tmpl.Execute(w, nil)
+		h.renderSuccess(w)
 	} else {
-		tmpl, _ := template.ParseFiles("html/callback-failure.html")
-		tmpl.Execute(w, map[string]string{"errorMsg": h.errorMsg, "errorDescription": h.errorDescription})
+		h.renderError(w)
 	}
 	h.shutdownSignal <- "shutdown"
+}
+
+func (h *callbackEndpoint) renderError(w http.ResponseWriter) {
+	tmpl, err := template.ParseFS(content, "html/callback-error.html")
+	if err != nil {
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		fmt.Fprintf(os.Stderr, "error parsing error template: %v\n", err)
+		return
+	}
+	if err := tmpl.Execute(w, map[string]string{"errorMsg": h.errorMsg, "errorDescription": h.errorDescription}); err != nil {
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		fmt.Fprintf(os.Stderr, "error executing error template: %v\n", err)
+		return
+	}
+}
+
+func (h *callbackEndpoint) renderSuccess(w http.ResponseWriter) {
+	tmpl, err := template.ParseFS(content, "html/callback-success.html")
+	if err != nil {
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		fmt.Fprintf(os.Stderr, "error parsing success template: %v\n", err)
+		return
+	}
+	if err := tmpl.Execute(w, nil); err != nil {
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		fmt.Fprintf(os.Stderr, "error executing success template: %v\n", err)
+		return
+	}
 }
