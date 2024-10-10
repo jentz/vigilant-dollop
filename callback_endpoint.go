@@ -5,6 +5,7 @@ import (
 	"embed"
 	"fmt"
 	"html/template"
+	"net"
 	"net/http"
 	"os"
 	"time"
@@ -19,24 +20,52 @@ type callbackEndpoint struct {
 	errorMsg         string
 	errorDescription string
 	shutdownSignal   chan string
+	addr             string
+	path             string
 }
 
-func (h *callbackEndpoint) start() {
+func (h *callbackEndpoint) setAddr(addr, defaultAddr string) {
+	if addr == "" {
+		h.addr = defaultAddr
+	} else {
+		h.addr = addr
+	}
+}
+
+func (h *callbackEndpoint) setPath(path, defaultPath string) {
+	if path == "" {
+		h.path = defaultPath
+	} else {
+		h.path = path
+	}
+}
+
+func (h *callbackEndpoint) start(addr, path string) {
 	h.shutdownSignal = make(chan string)
+	h.setAddr(addr, "localhost:9555")
+	h.setPath(path, "/callback")
 
 	server := &http.Server{
-		Addr:           "localhost:9555",
+		Addr:           h.addr,
 		Handler:        nil,
 		ReadTimeout:    10 * time.Second,
 		WriteTimeout:   10 * time.Second,
 		MaxHeaderBytes: 1 << 20,
 	}
 	h.server = server
-	http.Handle("/callback", h)
+	http.Handle(h.path, h)
+
+	ln, err := net.Listen("tcp", server.Addr)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "cannot listen on callback endpoint, port not available %s\n", server.Addr)
+		os.Exit(1)
+	}
+	ln.Close()
 
 	go func() {
 		server.ListenAndServe()
 	}()
+	fmt.Fprintf(os.Stderr, "started http server for callback endpoint %s%s\n", server.Addr, h.path)
 }
 
 func (h *callbackEndpoint) stop() {
