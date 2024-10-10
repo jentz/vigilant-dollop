@@ -28,7 +28,11 @@ func (aReq *AuthorizationRequest) URL() string {
 
 func (aReq *AuthorizationRequest) Execute() (aResp *AuthorizationResponse, err error) {
 	callbackEndpoint := &callbackEndpoint{}
-	callbackEndpoint.start()
+	callbackURL, err := url.Parse(aReq.RedirectURI)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "unable to parse redirect uri %s because %v\n", aReq.RedirectURI, err)
+	}
+	callbackEndpoint.start(callbackURL.Host, callbackURL.Path)
 
 	authURL, err := url.Parse(aReq.Endpoint)
 	if err != nil {
@@ -67,6 +71,6 @@ func (aReq *AuthorizationRequest) Execute() (aResp *AuthorizationResponse, err e
 		aResp.Code = callbackEndpoint.code
 		return aResp, nil
 	} else {
-		return nil, fmt.Errorf("authorization failed with error %s and description %s", callbackEndpoint.errorMsg, callbackEndpoint.errorDescription)
+		return nil, fmt.Errorf("authorization failed with error %s and description %s\n", callbackEndpoint.errorMsg, callbackEndpoint.errorDescription)
 	}
 }
