@@ -13,6 +13,7 @@ func TestParseIntrospectFlagsResult(t *testing.T) {
 		name     string
 		args     []string
 		oidcConf oidc.Config
+		flowConf oidc.IntrospectFlowConfig
 	}{
 		{
 			"all flags",
@@ -22,6 +23,8 @@ func TestParseIntrospectFlagsResult(t *testing.T) {
 				"--introspection-url", "https://example.com/introspection",
 				"--client-id", "client-id",
 				"--client-secret", "client-secret",
+				"--token-type", "access_token",
+				"--token", "token",
 			},
 			oidc.Config{
 				IssuerUrl:             "https://example.com",
@@ -30,6 +33,11 @@ func TestParseIntrospectFlagsResult(t *testing.T) {
 				ClientID:              "client-id",
 				ClientSecret:          "client-secret",
 			},
+			oidc.IntrospectFlowConfig{
+				BearerToken:   "",
+				Token:         "token",
+				TokenTypeHint: "access_token",
+			},
 		},
 		{
 			"only issuer",
@@ -37,6 +45,7 @@ func TestParseIntrospectFlagsResult(t *testing.T) {
 				"--issuer", "https://example.com",
 				"--client-id", "client-id",
 				"--client-secret", "client-secret",
+				"--token", "token",
 			},
 			oidc.Config{
 				IssuerUrl:             "https://example.com",
@@ -44,21 +53,32 @@ func TestParseIntrospectFlagsResult(t *testing.T) {
 				IntrospectionEndpoint: "",
 				ClientID:              "client-id",
 				ClientSecret:          "client-secret",
+			},
+			oidc.IntrospectFlowConfig{
+				BearerToken:   "",
+				Token:         "token",
+				TokenTypeHint: "access_token",
 			},
 		},
 		{
-			"no scopes provided",
+			"bearer token instead of client-secret provided",
 			[]string{
 				"--issuer", "https://example.com",
 				"--client-id", "client-id",
-				"--client-secret", "client-secret",
+				"--bearer-token", "bearer",
+				"--token", "token",
 			},
 			oidc.Config{
 				IssuerUrl:             "https://example.com",
 				DiscoveryEndpoint:     "",
 				IntrospectionEndpoint: "",
 				ClientID:              "client-id",
-				ClientSecret:          "client-secret",
+				ClientSecret:          "",
+			},
+			oidc.IntrospectFlowConfig{
+				BearerToken:   "bearer",
+				Token:         "token",
+				TokenTypeHint: "access_token",
 			},
 		},
 	}
@@ -79,6 +99,9 @@ func TestParseIntrospectFlagsResult(t *testing.T) {
 			if !reflect.DeepEqual(*f.Config, tt.oidcConf) {
 				t.Errorf("Config got %+v, want %+v", *f.Config, tt.oidcConf)
 			}
+			if !reflect.DeepEqual(*f.FlowConfig, tt.flowConf) {
+				t.Errorf("FlowConfig got %+v, want %+v", *f.FlowConfig, tt.flowConf)
+			}
 		})
 	}
 }
@@ -97,11 +120,19 @@ func TestParseIntrospectFlagsError(t *testing.T) {
 			},
 		},
 		{
-			"missing client-secret",
+			"missing client-secret and bearer token",
 			[]string{
 				"--issuer", "https://example.com",
 				"--discovery-url", "https://example.com/.well-known/openid-configuration",
 				"--client-id", "client-id",
+			},
+		},
+		{
+			"missing token",
+			[]string{
+				"--issuer", "https://example.com",
+				"--client-id", "client-id",
+				"--client-secret", "client-secret",
 			},
 		},
 	}
