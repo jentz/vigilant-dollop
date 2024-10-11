@@ -28,3 +28,6 @@ oidc-cli*
 
 # goreleaser dist directory
 dist/
+
+# asdf
+.tool-versions
