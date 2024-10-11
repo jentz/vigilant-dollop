@@ -31,6 +31,7 @@ func (aReq *AuthorizationRequest) Execute(authEndpoint string, customArgs ...str
 	callbackURL, err := url.Parse(aReq.RedirectURI)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "unable to parse redirect uri %s because %v\n", aReq.RedirectURI, err)
+		return nil, err
 	}
 	callbackEndpoint.start(callbackURL.Host, callbackURL.Path)
 

@@ -20,40 +20,20 @@ type callbackEndpoint struct {
 	errorMsg         string
 	errorDescription string
 	shutdownSignal   chan string
-	addr             string
-	path             string
-}
-
-func (h *callbackEndpoint) setAddr(addr, defaultAddr string) {
-	if addr == "" {
-		h.addr = defaultAddr
-	} else {
-		h.addr = addr
-	}
-}
-
-func (h *callbackEndpoint) setPath(path, defaultPath string) {
-	if path == "" {
-		h.path = defaultPath
-	} else {
-		h.path = path
-	}
 }
 
 func (h *callbackEndpoint) start(addr, path string) {
 	h.shutdownSignal = make(chan string)
-	h.setAddr(addr, "localhost:9555")
-	h.setPath(path, "/callback")
 
 	server := &http.Server{
-		Addr:           h.addr,
+		Addr:           addr,
 		Handler:        nil,
 		ReadTimeout:    10 * time.Second,
 		WriteTimeout:   10 * time.Second,
 		MaxHeaderBytes: 1 << 20,
 	}
 	h.server = server
-	http.Handle(h.path, h)
+	http.Handle(path, h)
 
 	ln, err := net.Listen("tcp", server.Addr)
 	if err != nil {
@@ -65,7 +45,7 @@ func (h *callbackEndpoint) start(addr, path string) {
 	go func() {
 		server.ListenAndServe()
 	}()
-	fmt.Fprintf(os.Stderr, "started http server for callback endpoint %s%s\n", server.Addr, h.path)
+	fmt.Fprintf(os.Stderr, "started http server for callback endpoint %s%s\n", server.Addr, path)
 }
 
 func (h *callbackEndpoint) stop() {
