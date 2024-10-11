@@ -22,8 +22,14 @@ func parseAuthorizationCodeFlags(name string, args []string) (runner CommandRunn
 
 	var flowConf oidc.AuthorizationCodeFlowConfig
 	flags.StringVar(&flowConf.Scopes, "scopes", "openid", "set scopes as a space separated list")
-	flags.StringVar(&flowConf.CallbackURI, "callback-uri", "http://localhost:9555/callback", "set OIDC callback uri")
-	flags.Var(&flowConf.CustomArgs, "custom", "custom authorization parameters (e.g. prompt=login), argument can be given multiple times")
+	flags.StringVar(&flowConf.CallbackURI, "callback-uri", "http://localhost:9555/callback", "set OIDC redirect uri")
+	flags.StringVar(&flowConf.Prompt, "prompt", "", "set prompt parameter to login, consent, select_account, or none")
+	flags.StringVar(&flowConf.AcrValues, "acr-values", "", "set acr_values parameter")
+	flags.StringVar(&flowConf.LoginHint, "login-hint", "", "set login_hint parameter")
+	flags.StringVar(&flowConf.MaxAge, "max-age", "", "set max_age parameter")
+	flags.StringVar(&flowConf.UILocales, "ui-locales", "", "set ui_locales parameter")
+	flags.StringVar(&flowConf.State, "state", "", "set state parameter")
+	flags.Var(&flowConf.CustomArgs, "custom", "custom authorization parameters, argument can be given multiple times")
 	flags.BoolVar(&flowConf.PKCE, "pkce", false, "use proof-key for code exchange (PKCE)")
 
 	runner = &oidc.AuthorizationCodeFlow{
