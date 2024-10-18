@@ -26,7 +26,7 @@ func (tReq *IntrospectionRequest) Execute() (tResp *IntrospectionResponse, err e
 
 	fmt.Fprintf(os.Stderr, "introspection endpoint: %s\n", tReq.Endpoint)
 	fmt.Fprintf(os.Stderr, "introspection request body: %s\n", vals.Encode())
-	
+
 	req, err := http.NewRequest("POST", tReq.Endpoint, strings.NewReader(vals.Encode()))
 	if err != nil {
 		return nil, err
