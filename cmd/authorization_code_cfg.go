@@ -19,6 +19,7 @@ func parseAuthorizationCodeFlags(name string, args []string) (runner CommandRunn
 	flags.StringVar(&oidcConf.TokenEndpoint, "token-url", "", "override token url")
 	flags.StringVar(&oidcConf.ClientID, "client-id", "", "set client ID (required)")
 	flags.StringVar(&oidcConf.ClientSecret, "client-secret", "", "set client secret (required if not using PKCE)")
+	flags.BoolVar(&oidcConf.SkipTLSVerify, "skip-tls-verify", false, "skip TLS certificate verification")
 
 	var flowConf oidc.AuthorizationCodeFlowConfig
 	flags.StringVar(&flowConf.Scopes, "scopes", "openid", "set scopes as a space separated list")

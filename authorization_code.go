@@ -1,7 +1,9 @@
 package oidc
 
 import (
+	"crypto/tls"
 	"fmt"
+	"net/http"
 )
 
 type AuthorizationCodeFlow struct {
@@ -53,7 +55,6 @@ func (c *AuthorizationCodeFlow) Run() error {
 
 	tReq := TokenRequest{
 		GrantType:    "authorization_code",
-		Endpoint:     c.Config.TokenEndpoint,
 		ClientID:     c.Config.ClientID,
 		ClientSecret: c.Config.ClientSecret,
 		RedirectURI:  c.FlowConfig.CallbackURI,
@@ -61,7 +62,15 @@ func (c *AuthorizationCodeFlow) Run() error {
 		Code:         aResp.Code,
 	}
 
-	tResp, err := tReq.Execute()
+	client := &http.Client{
+		Transport: &http.Transport{
+			TLSClientConfig: &tls.Config{
+				InsecureSkipVerify: c.Config.SkipTLSVerify,
+			},
+		},
+	}
+
+	tResp, err := tReq.Execute(c.Config.TokenEndpoint, client)
 	if err != nil {
 		return err
 	}
