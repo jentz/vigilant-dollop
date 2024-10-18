@@ -1,6 +1,10 @@
 package oidc
 
-import "fmt"
+import (
+	"crypto/tls"
+	"fmt"
+	"net/http"
+)
 
 type IntrospectFlow struct {
 	Config     *Config
@@ -17,7 +21,6 @@ func (c *IntrospectFlow) Run() error {
 	c.Config.DiscoverEndpoints()
 
 	req := IntrospectionRequest{
-		Endpoint:      c.Config.IntrospectionEndpoint,
 		ClientID:      c.Config.ClientID,
 		ClientSecret:  c.Config.ClientSecret,
 		Token:         c.FlowConfig.Token,
@@ -25,7 +28,15 @@ func (c *IntrospectFlow) Run() error {
 		BearerToken:   c.FlowConfig.BearerToken,
 	}
 
-	resp, err := req.Execute()
+	client := &http.Client{
+		Transport: &http.Transport{
+			TLSClientConfig: &tls.Config{
+				InsecureSkipVerify: c.Config.SkipTLSVerify,
+			},
+		},
+	}
+
+	resp, err := req.Execute(c.Config.IntrospectionEndpoint, client)
 	if err != nil {
 		return err
 	}

@@ -11,7 +11,6 @@ import (
 )
 
 type IntrospectionRequest struct {
-	Endpoint      string
 	Token         string
 	TokenTypeHint string
 	ClientID      string
@@ -19,21 +18,21 @@ type IntrospectionRequest struct {
 	BearerToken   string
 }
 
-func (tReq *IntrospectionRequest) Execute() (tResp *IntrospectionResponse, err error) {
+func (tReq *IntrospectionRequest) Execute(introspectionEndpoint string, httpClient *http.Client) (tResp *IntrospectionResponse, err error) {
 	vals := url.Values{}
 	vals.Set("token", tReq.Token)
 	vals.Set("token_type_hint", tReq.TokenTypeHint)
 
-	fmt.Fprintf(os.Stderr, "introspection endpoint: %s\n", tReq.Endpoint)
+	fmt.Fprintf(os.Stderr, "introspection endpoint: %s\n", introspectionEndpoint)
 	fmt.Fprintf(os.Stderr, "introspection request body: %s\n", vals.Encode())
-	
-	req, err := http.NewRequest("POST", tReq.Endpoint, strings.NewReader(vals.Encode()))
+
+	req, err := http.NewRequest("POST", introspectionEndpoint, strings.NewReader(vals.Encode()))
 	if err != nil {
 		return nil, err
 	}
 	req.SetBasicAuth(tReq.ClientID, tReq.ClientSecret)
 	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
-	resp, err := http.DefaultClient.Do(req)
+	resp, err := httpClient.Do(req)
 	if err != nil {
 		return nil, err
 	}
