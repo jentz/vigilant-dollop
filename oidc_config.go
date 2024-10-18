@@ -2,6 +2,7 @@ package oidc
 
 import (
 	"context"
+	"crypto/tls"
 	"log"
 	"net/http"
 )
@@ -16,6 +17,7 @@ type Config struct {
 	IntrospectionEndpoint string
 	UserinfoEndpoint      string
 	JWKSEndpoint          string
+	SkipTLSVerify         bool
 }
 
 func assignIfEmpty(a *string, b string) {
@@ -26,7 +28,14 @@ func assignIfEmpty(a *string, b string) {
 
 func (c *Config) DiscoverEndpoints() {
 	ctx := context.Background()
-	discoveryConfig, err := discover(ctx, c.IssuerUrl, http.DefaultClient, c.DiscoveryEndpoint)
+	client := &http.Client{
+		Transport: &http.Transport{
+			TLSClientConfig: &tls.Config{
+				InsecureSkipVerify: c.SkipTLSVerify,
+			},
+		},
+	}
+	discoveryConfig, err := discover(ctx, c.IssuerUrl, client, c.DiscoveryEndpoint)
 
 	if err != nil {
 		log.Fatal(err)

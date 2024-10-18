@@ -1,7 +1,9 @@
 package oidc
 
 import (
+	"crypto/tls"
 	"fmt"
+	"net/http"
 )
 
 type ClientCredentialsFlow struct {
@@ -17,7 +19,6 @@ func (c *ClientCredentialsFlow) Run() error {
 	c.Config.DiscoverEndpoints()
 
 	req := TokenRequest{
-		Endpoint:     c.Config.TokenEndpoint,
 		GrantType:    "client_credentials",
 		ClientID:     c.Config.ClientID,
 		ClientSecret: c.Config.ClientSecret,
@@ -27,7 +28,15 @@ func (c *ClientCredentialsFlow) Run() error {
 		req.Scope = c.FlowConfig.Scopes
 	}
 
-	resp, err := req.Execute()
+	client := &http.Client{
+		Transport: &http.Transport{
+			TLSClientConfig: &tls.Config{
+				InsecureSkipVerify: c.Config.SkipTLSVerify,
+			},
+		},
+	}
+
+	resp, err := req.Execute(c.Config.TokenEndpoint, client)
 	if err != nil {
 		return err
 	}

@@ -10,7 +10,6 @@ import (
 )
 
 type TokenRequest struct {
-	Endpoint     string
 	GrantType    string
 	Code         string
 	CodeVerifier string
@@ -20,7 +19,7 @@ type TokenRequest struct {
 	ClientSecret string
 }
 
-func (tReq *TokenRequest) Execute() (tResp *TokenResponse, err error) {
+func (tReq *TokenRequest) Execute(tokenEndpoint string, httpClient *http.Client) (tResp *TokenResponse, err error) {
 	vals := url.Values{}
 	vals.Set("grant_type", tReq.GrantType)
 
@@ -41,10 +40,10 @@ func (tReq *TokenRequest) Execute() (tResp *TokenResponse, err error) {
 		return nil, fmt.Errorf("grant type not implemented yet: %s", tReq.GrantType)
 	}
 
-	fmt.Fprintf(os.Stderr, "token endpoint: %s\n", tReq.Endpoint)
+	fmt.Fprintf(os.Stderr, "token endpoint: %s\n", tokenEndpoint)
 	fmt.Fprintf(os.Stderr, "token request body: %s\n", vals.Encode())
 
-	req, err := http.NewRequest("POST", tReq.Endpoint, strings.NewReader(vals.Encode()))
+	req, err := http.NewRequest("POST", tokenEndpoint, strings.NewReader(vals.Encode()))
 
 	// Set basic auth if username and password are provided
 	if tReq.ClientID != "" && tReq.GrantType == "authorization_code" {
@@ -55,7 +54,7 @@ func (tReq *TokenRequest) Execute() (tResp *TokenResponse, err error) {
 		return nil, err
 	}
 	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
-	resp, err := http.DefaultClient.Do(req)
+	resp, err := httpClient.Do(req)
 	if err != nil {
 		return nil, err
 	}

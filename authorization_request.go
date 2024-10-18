@@ -70,6 +70,6 @@ func (aReq *AuthorizationRequest) Execute(authEndpoint string, customArgs ...str
 		aResp.Code = callbackEndpoint.code
 		return aResp, nil
 	} else {
-		return nil, fmt.Errorf("authorization failed with error %s and description %s\n", callbackEndpoint.errorMsg, callbackEndpoint.errorDescription)
+		return nil, fmt.Errorf("authorization failed with error %s and description %s", callbackEndpoint.errorMsg, callbackEndpoint.errorDescription)
 	}
 }

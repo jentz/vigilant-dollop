@@ -75,7 +75,7 @@ func runCommand(name string, args []string) {
 	}
 
 	if err := command.Run(); err != nil {
-		fmt.Fprintf(os.Stderr, "error: %v", err.Error())
+		fmt.Fprintf(os.Stderr, "error: %v\n", err.Error())
 		os.Exit(1)
 	}
 }
