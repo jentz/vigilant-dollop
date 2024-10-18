@@ -7,48 +7,31 @@ import (
 	"net/url"
 	"os"
 	"strings"
+
+	"github.com/gorilla/schema"
 )
 
 type TokenRequest struct {
-	GrantType    string
-	Code         string
-	CodeVerifier string
-	RedirectURI  string
-	Scope        string
-	ClientID     string
-	ClientSecret string
+	GrantType    string `schema:"grant_type"`
+	Code         string `schema:"code,omitempty"`
+	CodeVerifier string `schema:"code_verifier,omitempty"`
+	RedirectURI  string `schema:"redirect_uri,omitempty"`
+	Scope        string `schema:"scope,omitempty"`
+	ClientID     string `schema:"client_id,omitempty"`
+	ClientSecret string `schema:"client_secret,omitempty"`
+	RefreshToken string `schema:"refresh_token,omitempty"`
 }
 
 func (tReq *TokenRequest) Execute(tokenEndpoint string, httpClient *http.Client) (tResp *TokenResponse, err error) {
-	vals := url.Values{}
-	vals.Set("grant_type", tReq.GrantType)
-
-	if tReq.Scope != "" {
-		vals.Set("scope", tReq.Scope)
+	encoder := schema.NewEncoder()
+	body := url.Values{}
+	err = encoder.Encode(tReq, body)
+	if err != nil {
+		return nil, err
 	}
-
-	if tReq.GrantType == "client_credentials" {
-		vals.Set("client_id", tReq.ClientID)
-		vals.Set("client_secret", tReq.ClientSecret)
-	} else if tReq.GrantType == "authorization_code" {
-		vals.Set("code", tReq.Code)
-		vals.Set("redirect_uri", tReq.RedirectURI)
-		if tReq.CodeVerifier != "" {
-			vals.Set("code_verifier", tReq.CodeVerifier)
-		}
-	} else {
-		return nil, fmt.Errorf("grant type not implemented yet: %s", tReq.GrantType)
-	}
-
 	fmt.Fprintf(os.Stderr, "token endpoint: %s\n", tokenEndpoint)
 
-	req, err := http.NewRequest("POST", tokenEndpoint, strings.NewReader(vals.Encode()))
-
-	// Set basic auth if username and password are provided
-	if tReq.ClientID != "" && tReq.GrantType == "authorization_code" {
-		req.SetBasicAuth(tReq.ClientID, tReq.ClientSecret)
-	}
-
+	req, err := http.NewRequest("POST", tokenEndpoint, strings.NewReader(body.Encode()))
 	if err != nil {
 		return nil, err
 	}
