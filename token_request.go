@@ -41,7 +41,6 @@ func (tReq *TokenRequest) Execute(tokenEndpoint string, httpClient *http.Client)
 	}
 
 	fmt.Fprintf(os.Stderr, "token endpoint: %s\n", tokenEndpoint)
-	fmt.Fprintf(os.Stderr, "token request body: %s\n", vals.Encode())
 
 	req, err := http.NewRequest("POST", tokenEndpoint, strings.NewReader(vals.Encode()))
 
