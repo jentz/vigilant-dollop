@@ -24,6 +24,7 @@ func TestParseTokenRefreshFlagsResult(t *testing.T) {
 				"--client-id", "client-id",
 				"--client-secret", "client-secret",
 				"--refresh-token", "refresh-token",
+				"--scopes", "openid profile email",
 			},
 			oidc.Config{
 				IssuerUrl:             "https://example.com",
@@ -33,11 +34,12 @@ func TestParseTokenRefreshFlagsResult(t *testing.T) {
 				ClientSecret:          "client-secret",
 			},
 			oidc.TokenRefreshFlowConfig{
+				Scopes:       "openid profile email",
 				RefreshToken: "refresh-token",
 			},
 		},
 		{
-			"only issuer",
+			"only issuer, no scopes",
 			[]string{
 				"--issuer", "https://example.com",
 				"--client-id", "client-id",
@@ -94,14 +96,6 @@ func TestParseTokenRefreshFlagsError(t *testing.T) {
 			},
 		},
 		{
-			"missing client-secret",
-			[]string{
-				"--issuer", "https://example.com",
-				"--discovery-url", "https://example.com/.well-known/openid-configuration",
-				"--client-id", "client-id",
-			},
-		},
-		{
 			"missing refresh token",
 			[]string{
 				"--issuer", "https://example.com",
@@ -110,11 +104,11 @@ func TestParseTokenRefreshFlagsError(t *testing.T) {
 			},
 		},
 		{
-			"bearer token instead of client-secret provided",
+			"undefined argument provided",
 			[]string{
 				"--issuer", "https://example.com",
 				"--client-id", "client-id",
-				"--bearer-token", "bearer",
+				"--undefined-argument", "undefined-argument",
 				"--refresh-token", "refresh-token",
 			},
 		},

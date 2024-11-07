@@ -12,6 +12,7 @@ type TokenRefreshFlow struct {
 }
 
 type TokenRefreshFlowConfig struct {
+	Scopes       string
 	RefreshToken string
 }
 
@@ -22,6 +23,7 @@ func (c *TokenRefreshFlow) Run() error {
 		GrantType:    "refresh_token",
 		ClientID:     c.Config.ClientID,
 		ClientSecret: c.Config.ClientSecret,
+		Scope:        c.FlowConfig.Scopes,
 		RefreshToken: c.FlowConfig.RefreshToken,
 	}
 

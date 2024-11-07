@@ -18,11 +18,12 @@ func parseTokenRefreshFlags(name string, args []string) (runner CommandRunner, o
 	flags.StringVar(&oidcConf.IssuerUrl, "issuer", "", "set issuer url (required)")
 	flags.StringVar(&oidcConf.DiscoveryEndpoint, "discovery-url", "", "override discovery url")
 	flags.StringVar(&oidcConf.IntrospectionEndpoint, "introspection-url", "", "override introspection url")
-	flags.StringVar(&oidcConf.ClientID, "client-id", "", "set client ID (required)")
-	flags.StringVar(&oidcConf.ClientSecret, "client-secret", "", "set client secret (required unless bearer token is provided)")
+	flags.StringVar(&oidcConf.ClientID, "client-id", "", "set client ID")
+	flags.StringVar(&oidcConf.ClientSecret, "client-secret", "", "set client secret")
 
 	var flowConf oidc.TokenRefreshFlowConfig
 	flags.StringVar(&flowConf.RefreshToken, "refresh-token", "", "refresh token to be used for token refresh")
+	flags.StringVar(&flowConf.Scopes, "scopes", "", "set scopes as a space separated list")
 
 	runner = &oidc.TokenRefreshFlow{
 		Config:     &oidcConf,
@@ -48,14 +49,6 @@ func parseTokenRefreshFlags(name string, args []string) (runner CommandRunner, o
 		{
 			oidcConf.IssuerUrl == "",
 			"issuer is required",
-		},
-		{
-			oidcConf.ClientID == "",
-			"client-id is required",
-		},
-		{
-			oidcConf.ClientSecret == "",
-			"client-secret or bearer-token is required",
 		},
 		{
 			flowConf.RefreshToken == "",
