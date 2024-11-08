@@ -12,6 +12,8 @@ Usage:
 Commands:
   authorization_code: Uses the authorization code flow to get a token response
   client_credentials: Uses the client credentials flow to get a token response
+  introspect        : Uses the introspection flow to validate a token and fetch the associated claims
+  token_refresh     : Uses the token refresh flow to exchange a refresh token and obtain new tokens
   help              : Prints help
 
 Flags:

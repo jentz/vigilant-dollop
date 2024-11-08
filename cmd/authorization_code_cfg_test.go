@@ -44,7 +44,7 @@ func TestParseAuthorizationCodeFlagsResult(t *testing.T) {
 				TokenEndpoint:         "https://example.com/token",
 				ClientID:              "client-id",
 				ClientSecret:          "client-secret",
-				SkipTLSVerify: 	   	   true,
+				SkipTLSVerify:         true,
 			},
 			oidc.AuthorizationCodeFlowConfig{
 				Scopes:      "openid profile email",
