@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"os"
 	"slices"
+
+	oidc "github.com/jentz/vigilant-dollop"
 )
 
 type CommandRunner interface {
@@ -15,7 +17,7 @@ type CommandRunner interface {
 type Command struct {
 	Name      string
 	Help      string
-	Configure func(name string, args []string) (config CommandRunner, output string, err error)
+	Configure func(name string, args []string, conf *oidc.Config) (runner CommandRunner, output string, err error)
 }
 
 var commands = []Command{
@@ -47,7 +49,7 @@ Usage:
 	fmt.Fprintf(os.Stderr, "Run `oidc-cli <command> -h` to get help for a specific command\n\n")
 }
 
-func runCommand(name string, args []string) {
+func runCommand(name string, args []string, conf *oidc.Config) {
 
 	cmdIdx := slices.IndexFunc(commands, func(cmd Command) bool {
 		return cmd.Name == name
@@ -65,7 +67,7 @@ func runCommand(name string, args []string) {
 		os.Exit(0)
 	}
 
-	command, output, err := cmd.Configure(name, args)
+	command, output, err := cmd.Configure(name, args, conf)
 	if errors.Is(err, flag.ErrHelp) {
 		fmt.Println(output)
 		os.Exit(2)
@@ -82,7 +84,15 @@ func runCommand(name string, args []string) {
 }
 
 func main() {
+	var conf oidc.Config
+
 	flag.Usage = usage
+	// global flags
+	flag.StringVar(&conf.IssuerUrl, "issuer", "", "set issuer url (required)")
+	flag.StringVar(&conf.DiscoveryEndpoint, "discovery-url", "", "override discovery url")
+	flag.StringVar(&conf.ClientID, "client-id", "", "set client ID (required)")
+	flag.StringVar(&conf.ClientSecret, "client-secret", "", "set client secret (required if not using PKCE)")
+	flag.BoolVar(&conf.SkipTLSVerify, "skip-tls-verify", false, "skip TLS certificate verification")
 	flag.Parse()
 
 	// If no command is specified, print usage and exit
@@ -93,5 +103,5 @@ func main() {
 
 	subCmd := flag.Arg(0)
 	subCmdArgs := flag.Args()[1:]
-	runCommand(subCmd, subCmdArgs)
+	runCommand(subCmd, subCmdArgs, &conf)
 }
