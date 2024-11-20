@@ -199,7 +199,7 @@ func TestParseAuthorizationCodeFlagsResult(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			runner, output, err := parseAuthorizationCodeFlags("authorization_code", tt.args)
+			runner, output, err := parseAuthorizationCodeFlags("authorization_code", tt.args, &oidc.Config{})
 			if err != nil {
 				t.Errorf("err got %v, want nil", err)
 			}
@@ -248,7 +248,7 @@ func TestParseAuthorizationCodeFlagsError(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, output, err := parseAuthorizationCodeFlags("authorization_code", tt.args)
+			_, output, err := parseAuthorizationCodeFlags("authorization_code", tt.args, &oidc.Config{})
 			if err == nil {
 				t.Errorf("err got nil, want error")
 			}
