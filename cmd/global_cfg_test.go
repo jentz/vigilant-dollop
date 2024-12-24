@@ -10,9 +10,9 @@ import (
 func TestParseGlobalFlagsResult(t *testing.T) {
 
 	var tests = []struct {
-		name     string
-		args     []string
-		oidcConf oidc.Config
+		name          string
+		args          []string
+		oidcConf      oidc.Config
 		remainingArgs []string
 	}{
 		{
@@ -20,20 +20,16 @@ func TestParseGlobalFlagsResult(t *testing.T) {
 			[]string{
 				"--issuer", "https://example.com",
 				"--discovery-url", "https://example.com/.well-known/openid-configuration",
-				"--authorization-url", "https://example.com/authorize",
-				"--token-url", "https://example.com/token",
 				"--skip-tls-verify",
 				"--client-id", "client-id",
 				"--client-secret", "client-secret",
 			},
 			oidc.Config{
-				IssuerUrl:             "https://example.com",
-				DiscoveryEndpoint:     "https://example.com/.well-known/openid-configuration",
-				AuthorizationEndpoint: "https://example.com/authorize",
-				TokenEndpoint:         "https://example.com/token",
-				ClientID:              "client-id",
-				ClientSecret:          "client-secret",
-				SkipTLSVerify:         true,
+				IssuerUrl:         "https://example.com",
+				DiscoveryEndpoint: "https://example.com/.well-known/openid-configuration",
+				ClientID:          "client-id",
+				ClientSecret:      "client-secret",
+				SkipTLSVerify:     true,
 			},
 			[]string{},
 		},
@@ -45,12 +41,10 @@ func TestParseGlobalFlagsResult(t *testing.T) {
 				"--client-secret", "client-secret",
 			},
 			oidc.Config{
-				IssuerUrl:             "https://example.com",
-				DiscoveryEndpoint:     "",
-				AuthorizationEndpoint: "",
-				TokenEndpoint:         "",
-				ClientID:              "client-id",
-				ClientSecret:          "client-secret",
+				IssuerUrl:         "https://example.com",
+				DiscoveryEndpoint: "",
+				ClientID:          "client-id",
+				ClientSecret:      "client-secret",
 			},
 			[]string{},
 		},
@@ -64,13 +58,11 @@ func TestParseGlobalFlagsResult(t *testing.T) {
 				"--skip-tls-verify",
 			},
 			oidc.Config{
-				IssuerUrl:             "https://example.com",
-				DiscoveryEndpoint:     "",
-				AuthorizationEndpoint: "",
-				TokenEndpoint:         "",
-				ClientID:              "client-id",
-				ClientSecret:          "client-secret",
-				SkipTLSVerify:         false, // expecting default value as argument is not parsed
+				IssuerUrl:         "https://example.com",
+				DiscoveryEndpoint: "",
+				ClientID:          "client-id",
+				ClientSecret:      "client-secret",
+				SkipTLSVerify:     false, // expecting default value as argument is not parsed
 			},
 			[]string{"non-flag-argument", "--skip-tls-verify"},
 		},

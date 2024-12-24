@@ -14,15 +14,11 @@ func parseGlobalFlags(name string, args []string) (oidcConf *oidc.Config, remain
 	var buf bytes.Buffer
 	flags.SetOutput(&buf)
 
-	flags.StringVar(&oidcConf.IssuerUrl, "issuer", "", "set issuer url (required)")
+	flags.StringVar(&oidcConf.IssuerUrl, "issuer", "", "set issuer url")
 	flags.StringVar(&oidcConf.DiscoveryEndpoint, "discovery-url", "", "override discovery url")
-	flags.StringVar(&oidcConf.AuthorizationEndpoint, "authorization-url", "", "override authorization url")
-	flags.StringVar(&oidcConf.TokenEndpoint, "token-url", "", "override token url")
-	flags.StringVar(&oidcConf.ClientID, "client-id", "", "set client ID (required)")
-	flags.StringVar(&oidcConf.ClientSecret, "client-secret", "", "set client secret (required if not using PKCE)")
+	flags.StringVar(&oidcConf.ClientID, "client-id", "", "set client ID")
+	flags.StringVar(&oidcConf.ClientSecret, "client-secret", "", "set client secret")
 	flags.BoolVar(&oidcConf.SkipTLSVerify, "skip-tls-verify", false, "skip TLS certificate verification")
-
-	flags.Parse(args)
 
 	err = flags.Parse(args)
 	if err != nil {

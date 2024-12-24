@@ -61,7 +61,7 @@ func TestParseTokenRefreshFlagsResult(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			runner, output, err := parseTokenRefreshFlags("token_refresh", tt.args)
+			runner, output, err := parseTokenRefreshFlags("token_refresh", tt.args, &oidc.Config{})
 			if err != nil {
 				t.Errorf("err got %v, want nil", err)
 			}
@@ -116,7 +116,7 @@ func TestParseTokenRefreshFlagsError(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, output, err := parseTokenRefreshFlags("token_refresh", tt.args)
+			_, output, err := parseTokenRefreshFlags("token_refresh", tt.args, &oidc.Config{})
 			if err == nil {
 				t.Errorf("err got nil, want error")
 			}

@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"os"
 	"slices"
+
+	oidc "github.com/jentz/vigilant-dollop"
 )
 
 type CommandRunner interface {
@@ -15,7 +17,7 @@ type CommandRunner interface {
 type Command struct {
 	Name      string
 	Help      string
-	Configure func(name string, args []string) (config CommandRunner, output string, err error)
+	Configure func(name string, args []string, cfg *oidc.Config) (config CommandRunner, output string, err error)
 }
 
 var commands = []Command{
@@ -47,7 +49,7 @@ Usage:
 	fmt.Fprintf(os.Stderr, "Run `oidc-cli <command> -h` to get help for a specific command\n\n")
 }
 
-func runCommand(name string, args []string) {
+func runCommand(name string, args []string, globalConf *oidc.Config) {
 
 	cmdIdx := slices.IndexFunc(commands, func(cmd Command) bool {
 		return cmd.Name == name
@@ -65,7 +67,7 @@ func runCommand(name string, args []string) {
 		os.Exit(0)
 	}
 
-	command, output, err := cmd.Configure(name, args)
+	command, output, err := cmd.Configure(name, args, globalConf)
 	if errors.Is(err, flag.ErrHelp) {
 		fmt.Println(output)
 		os.Exit(2)
@@ -84,7 +86,7 @@ func runCommand(name string, args []string) {
 func main() {
 	flag.Usage = usage
 
-	_, args, output, err := parseGlobalFlags("global", os.Args[1:])
+	globalConf, args, output, err := parseGlobalFlags("global flags", os.Args[1:])
 	if errors.Is(err, flag.ErrHelp) {
 		fmt.Println(output)
 		os.Exit(2)
@@ -102,5 +104,5 @@ func main() {
 
 	subCmd := args[0]
 	subCmdArgs := args[1:]
-	runCommand(subCmd, subCmdArgs)
+	runCommand(subCmd, subCmdArgs, globalConf)
 }
