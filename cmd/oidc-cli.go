@@ -83,15 +83,24 @@ func runCommand(name string, args []string) {
 
 func main() {
 	flag.Usage = usage
-	flag.Parse()
+
+	_, args, output, err := parseGlobalFlags("global", os.Args[1:])
+	if errors.Is(err, flag.ErrHelp) {
+		fmt.Println(output)
+		os.Exit(2)
+	} else if err != nil {
+		fmt.Println("got error:", err)
+		fmt.Println("output:\n", output)
+		os.Exit(1)
+	}
 
 	// If no command is specified, print usage and exit
-	if flag.NArg() < 1 {
+	if len(args) < 1 {
 		usage()
 		os.Exit(1)
 	}
 
-	subCmd := flag.Arg(0)
-	subCmdArgs := flag.Args()[1:]
+	subCmd := args[0]
+	subCmdArgs := args[1:]
 	runCommand(subCmd, subCmdArgs)
 }
