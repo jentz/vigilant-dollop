@@ -19,6 +19,7 @@ func parseGlobalFlags(name string, args []string) (oidcConf *oidc.Config, remain
 	flags.StringVar(&oidcConf.ClientID, "client-id", "", "set client ID")
 	flags.StringVar(&oidcConf.ClientSecret, "client-secret", "", "set client secret")
 	flags.BoolVar(&oidcConf.SkipTLSVerify, "skip-tls-verify", false, "skip TLS certificate verification")
+	flags.BoolVar(&oidcConf.Verbose, "verbose", false, "enable verbose output")
 
 	err = flags.Parse(args)
 	if err != nil {

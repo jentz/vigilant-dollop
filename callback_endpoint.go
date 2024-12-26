@@ -22,7 +22,7 @@ type callbackEndpoint struct {
 	shutdownSignal   chan string
 }
 
-func (h *callbackEndpoint) start(addr, path string) {
+func (h *callbackEndpoint) start(addr, path string, verbose bool) {
 	h.shutdownSignal = make(chan string)
 
 	server := &http.Server{
@@ -45,7 +45,10 @@ func (h *callbackEndpoint) start(addr, path string) {
 	go func() {
 		server.ListenAndServe()
 	}()
-	fmt.Fprintf(os.Stderr, "started http server for callback endpoint %s%s\n", server.Addr, path)
+
+	if verbose {
+		fmt.Fprintf(os.Stderr, "started http server for callback endpoint %s%s\n", server.Addr, path)
+	}
 }
 
 func (h *callbackEndpoint) stop() {
@@ -53,8 +56,6 @@ func (h *callbackEndpoint) stop() {
 }
 
 func (h *callbackEndpoint) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-
-	fmt.Fprintf(os.Stderr, "receiving callback: %s\n", r.URL.String())
 
 	h.code = r.URL.Query().Get("code")
 	h.errorDescription = r.URL.Query().Get("error_description")

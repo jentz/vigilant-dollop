@@ -48,7 +48,7 @@ func (c *AuthorizationCodeFlow) Run() error {
 		aReq.CodeChallengeMethod = "S256"
 	}
 
-	aResp, err := aReq.Execute(c.Config.AuthorizationEndpoint, c.FlowConfig.CustomArgs...)
+	aResp, err := aReq.Execute(c.Config.AuthorizationEndpoint, c.Config.Verbose, c.FlowConfig.CustomArgs...)
 	if err != nil {
 		return err
 	}
@@ -70,7 +70,7 @@ func (c *AuthorizationCodeFlow) Run() error {
 		},
 	}
 
-	tResp, err := tReq.Execute(c.Config.TokenEndpoint, client)
+	tResp, err := tReq.Execute(c.Config.TokenEndpoint, c.Config.Verbose, client)
 	if err != nil {
 		return err
 	}

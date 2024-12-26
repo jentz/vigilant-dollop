@@ -18,13 +18,15 @@ type IntrospectionRequest struct {
 	BearerToken   string
 }
 
-func (tReq *IntrospectionRequest) Execute(introspectionEndpoint string, httpClient *http.Client) (tResp *IntrospectionResponse, err error) {
+func (tReq *IntrospectionRequest) Execute(introspectionEndpoint string, verbose bool, httpClient *http.Client) (tResp *IntrospectionResponse, err error) {
 	vals := url.Values{}
 	vals.Set("token", tReq.Token)
 	vals.Set("token_type_hint", tReq.TokenTypeHint)
 
-	fmt.Fprintf(os.Stderr, "introspection endpoint: %s\n", introspectionEndpoint)
-	fmt.Fprintf(os.Stderr, "introspection request body: %s\n", vals.Encode())
+	if verbose {
+		fmt.Fprintf(os.Stderr, "introspection endpoint: %s\n", introspectionEndpoint)
+		fmt.Fprintf(os.Stderr, "introspection request body: %s\n", vals.Encode())
+	}
 
 	req, err := http.NewRequest("POST", introspectionEndpoint, strings.NewReader(vals.Encode()))
 	if err != nil {
