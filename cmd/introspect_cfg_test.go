@@ -25,6 +25,7 @@ func TestParseIntrospectFlagsResult(t *testing.T) {
 				"--client-secret", "client-secret",
 				"--token-type", "access_token",
 				"--token", "token",
+				"--response-format", "jwt",
 			},
 			oidc.Config{
 				IssuerUrl:             "https://example.com",
@@ -34,9 +35,10 @@ func TestParseIntrospectFlagsResult(t *testing.T) {
 				ClientSecret:          "client-secret",
 			},
 			oidc.IntrospectFlowConfig{
-				BearerToken:   "",
-				Token:         "token",
-				TokenTypeHint: "access_token",
+				BearerToken:    "",
+				Token:          "token",
+				TokenTypeHint:  "access_token",
+				ResponseFormat: "jwt",
 			},
 		},
 		{
@@ -55,9 +57,10 @@ func TestParseIntrospectFlagsResult(t *testing.T) {
 				ClientSecret:          "client-secret",
 			},
 			oidc.IntrospectFlowConfig{
-				BearerToken:   "",
-				Token:         "token",
-				TokenTypeHint: "access_token",
+				BearerToken:    "",
+				Token:          "token",
+				TokenTypeHint:  "access_token",
+				ResponseFormat: "json",
 			},
 		},
 		{
@@ -76,9 +79,10 @@ func TestParseIntrospectFlagsResult(t *testing.T) {
 				ClientSecret:          "",
 			},
 			oidc.IntrospectFlowConfig{
-				BearerToken:   "bearer",
-				Token:         "token",
-				TokenTypeHint: "access_token",
+				BearerToken:    "bearer",
+				Token:          "token",
+				TokenTypeHint:  "access_token",
+				ResponseFormat: "json",
 			},
 		},
 	}
