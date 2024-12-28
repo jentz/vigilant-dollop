@@ -9,32 +9,37 @@ import (
 	"net/url"
 	"os"
 	"strings"
+
+	"github.com/gorilla/schema"
 )
 
 type IntrospectionRequest struct {
-	Token          string
-	TokenTypeHint  string
-	ClientID       string
-	ClientSecret   string
+	Token          string `schema:"token"`
+	TokenTypeHint  string `schema:"token_type_hint"`
+	ClientID       string `schema:"client_id"`
+	ClientSecret   string `schema:"client_secret"`
 	BearerToken    string
 	ResponseFormat string
 }
 
 func (tReq *IntrospectionRequest) Execute(introspectionEndpoint string, verbose bool, httpClient *http.Client) (tResp *IntrospectionResponse, err error) {
-	vals := url.Values{}
-	vals.Set("token", tReq.Token)
-	vals.Set("token_type_hint", tReq.TokenTypeHint)
-
-	if verbose {
-		fmt.Fprintf(os.Stderr, "introspection endpoint: %s\n", introspectionEndpoint)
-		fmt.Fprintf(os.Stderr, "introspection request body: %s\n", vals.Encode())
-	}
-
-	req, err := http.NewRequest("POST", introspectionEndpoint, strings.NewReader(vals.Encode()))
+	encoder := schema.NewEncoder()
+	body := url.Values{}
+	err = encoder.Encode(tReq, body)
 	if err != nil {
 		return nil, err
 	}
-	req.SetBasicAuth(tReq.ClientID, tReq.ClientSecret)
+
+	if verbose {
+		fmt.Fprintf(os.Stderr, "introspection endpoint: %s\n", introspectionEndpoint)
+		fmt.Fprintf(os.Stderr, "introspection request body: %s\n", body.Encode())
+	}
+
+	req, err := http.NewRequest("POST", introspectionEndpoint, strings.NewReader(body.Encode()))
+
+	if err != nil {
+		return nil, err
+	}
 	req.Header.Add("Accept", "application/"+tReq.ResponseFormat)
 	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 	resp, err := httpClient.Do(req)
