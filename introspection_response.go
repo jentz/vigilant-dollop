@@ -30,6 +30,7 @@ type IntrospectionResponse struct {
 	AzpClientID    string `json:"azp_client_id,omitempty"`
 	RealmAccess    string `json:"realm_access,omitempty"`
 	ResourceAccess string `json:"resource_access,omitempty"`
+	Jwt            string `json:"jwt,omitempty"`
 }
 
 func (tResp *IntrospectionResponse) JSON() (string, error) {
