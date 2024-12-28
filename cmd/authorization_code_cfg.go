@@ -31,6 +31,7 @@ func parseAuthorizationCodeFlags(name string, args []string, oidcConf *oidc.Conf
 	flags.StringVar(&flowConf.State, "state", "", "set state parameter")
 	flags.Var(&flowConf.CustomArgs, "custom", "custom authorization parameters, argument can be given multiple times")
 	flags.BoolVar(&flowConf.PKCE, "pkce", false, "use proof-key for code exchange (PKCE)")
+	flags.BoolVar(&flowConf.PAR, "par", false, "use pushed authorization requests")
 
 	runner = &oidc.AuthorizationCodeFlow{
 		Config:     oidcConf,

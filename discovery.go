@@ -12,14 +12,15 @@ const (
 )
 
 type DiscoveryConfiguration struct {
-	Issuer                      string `json:"issuer,omitempty"`
-	AuthorizationEndpoint       string `json:"authorization_endpoint,omitempty"`
-	TokenEndpoint               string `json:"token_endpoint,omitempty"`
-	IntrospectionEndpoint       string `json:"introspection_endpoint,omitempty"`
-	UserinfoEndpoint            string `json:"userinfo_endpoint,omitempty"`
-	RevocationEndpoint          string `json:"revocation_endpoint,omitempty"`
-	DeviceAuthorizationEndpoint string `json:"device_authorization_endpoint,omitempty"`
-	JwksURI                     string `json:"jwks_uri,omitempty"`
+	Issuer                             string `json:"issuer,omitempty"`
+	AuthorizationEndpoint              string `json:"authorization_endpoint,omitempty"`
+	PushedAuthorizationRequestEndpoint string `json:"pushed_authorization_request_endpoint,omitempty"`
+	TokenEndpoint                      string `json:"token_endpoint,omitempty"`
+	IntrospectionEndpoint              string `json:"introspection_endpoint,omitempty"`
+	UserinfoEndpoint                   string `json:"userinfo_endpoint,omitempty"`
+	RevocationEndpoint                 string `json:"revocation_endpoint,omitempty"`
+	DeviceAuthorizationEndpoint        string `json:"device_authorization_endpoint,omitempty"`
+	JwksURI                            string `json:"jwks_uri,omitempty"`
 }
 
 func discover(ctx context.Context, issuer string, httpClient *http.Client, wellKnownUrl ...string) (*DiscoveryConfiguration, error) {

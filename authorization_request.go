@@ -23,6 +23,7 @@ type AuthorizationRequest struct {
 	State               string `schema:"state,omitempty"`
 	CodeChallengeMethod string `schema:"code_challenge_method,omitempty"`
 	CodeChallenge       string `schema:"code_challenge,omitempty"`
+	RequestURI          string `schema:"request_uri,omitempty"`
 }
 
 func (aReq *AuthorizationRequest) Execute(authEndpoint string, verbose bool, customArgs ...string) (aResp *AuthorizationResponse, err error) {
