@@ -25,6 +25,7 @@ func (c *TokenRefreshFlow) Run() error {
 		ClientSecret: c.Config.ClientSecret,
 		Scope:        c.FlowConfig.Scopes,
 		RefreshToken: c.FlowConfig.RefreshToken,
+		AuthMethod:   c.Config.AuthMethod,
 	}
 
 	client := &http.Client{

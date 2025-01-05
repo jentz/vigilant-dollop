@@ -28,6 +28,7 @@ func (c *IntrospectFlow) Run() error {
 		TokenTypeHint:  c.FlowConfig.TokenTypeHint,
 		BearerToken:    c.FlowConfig.BearerToken,
 		ResponseFormat: c.FlowConfig.ResponseFormat,
+		AuthMethod:    c.Config.AuthMethod,
 	}
 
 	client := &http.Client{

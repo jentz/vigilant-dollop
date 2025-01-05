@@ -12,14 +12,15 @@ import (
 )
 
 type TokenRequest struct {
-	GrantType    string `schema:"grant_type"`
-	Code         string `schema:"code,omitempty"`
-	CodeVerifier string `schema:"code_verifier,omitempty"`
-	RedirectURI  string `schema:"redirect_uri,omitempty"`
-	Scope        string `schema:"scope,omitempty"`
-	ClientID     string `schema:"client_id,omitempty"`
-	ClientSecret string `schema:"client_secret,omitempty"`
-	RefreshToken string `schema:"refresh_token,omitempty"`
+	GrantType    string          `schema:"grant_type"`
+	Code         string          `schema:"code,omitempty"`
+	CodeVerifier string          `schema:"code_verifier,omitempty"`
+	RedirectURI  string          `schema:"redirect_uri,omitempty"`
+	Scope        string          `schema:"scope,omitempty"`
+	ClientID     string          `schema:"client_id,omitempty"`
+	ClientSecret string          `schema:"client_secret,omitempty"`
+	RefreshToken string          `schema:"refresh_token,omitempty"`
+	AuthMethod   AuthMethodValue `schema:"-"` // not part of the request
 }
 
 func (tReq *TokenRequest) Execute(tokenEndpoint string, verbose bool, httpClient *http.Client) (tResp *TokenResponse, err error) {
@@ -45,11 +46,21 @@ func (tReq *TokenRequest) Execute(tokenEndpoint string, verbose bool, httpClient
 		}
 	}
 
+	if tReq.AuthMethod == AuthMethodClientSecretBasic {
+		body.Del("client_id")
+		body.Del("client_secret")
+	}
+
 	req, err := http.NewRequest("POST", tokenEndpoint, strings.NewReader(body.Encode()))
 	if err != nil {
 		return nil, err
 	}
 	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
+
+	if tReq.AuthMethod == AuthMethodClientSecretBasic {
+		req.SetBasicAuth(tReq.ClientID, tReq.ClientSecret)
+	}
+
 	resp, err := httpClient.Do(req)
 	if err != nil {
 		return nil, err

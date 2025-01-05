@@ -17,6 +17,7 @@ func parseClientCredentialsFlags(name string, args []string, oidcConf *oidc.Conf
 	flags.StringVar(&oidcConf.TokenEndpoint, "token-url", "", "override token url")
 	flags.StringVar(&oidcConf.ClientID, "client-id", oidcConf.ClientID, "set client ID (required)")
 	flags.StringVar(&oidcConf.ClientSecret, "client-secret", oidcConf.ClientSecret, "set client secret (required)")
+	flags.Var(&oidcConf.AuthMethod, "auth-method", "auth method to use (client_secret_basic or client_secret_post)")
 
 	var flowConf oidc.ClientCredentialsFlowConfig
 	flags.StringVar(&flowConf.Scopes, "scopes", "", "set scopes as a space separated list")

@@ -19,6 +19,7 @@ func parseAuthorizationCodeFlags(name string, args []string, oidcConf *oidc.Conf
 	flags.StringVar(&oidcConf.ClientID, "client-id", oidcConf.ClientID, "set client ID (required)")
 	flags.StringVar(&oidcConf.ClientSecret, "client-secret", oidcConf.ClientSecret, "set client secret (required if not using PKCE)")
 	flags.BoolVar(&oidcConf.SkipTLSVerify, "skip-tls-verify", oidcConf.SkipTLSVerify, "skip TLS certificate verification")
+	flags.Var(&oidcConf.AuthMethod, "auth-method", "auth method to use (client_secret_basic or client_secret_post)")
 
 	var flowConf oidc.AuthorizationCodeFlowConfig
 	flags.StringVar(&flowConf.Scopes, "scopes", "openid", "set scopes as a space separated list")
@@ -40,7 +41,7 @@ func parseAuthorizationCodeFlags(name string, args []string, oidcConf *oidc.Conf
 
 	err = flags.Parse(args)
 	if err != nil {
-		return nil, buf.String(), err
+		return nil, buf.String(), flag.ErrHelp
 	}
 
 	var invalidArgsChecks = []struct {

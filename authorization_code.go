@@ -98,6 +98,7 @@ func (c *AuthorizationCodeFlow) Run() error {
 		GrantType:    "authorization_code",
 		ClientID:     c.Config.ClientID,
 		ClientSecret: c.Config.ClientSecret,
+		AuthMethod:   c.Config.AuthMethod,
 		RedirectURI:  c.FlowConfig.CallbackURI,
 		CodeVerifier: codeVerifier,
 		Code:         aResp.Code,

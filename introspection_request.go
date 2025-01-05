@@ -20,6 +20,7 @@ type IntrospectionRequest struct {
 	ClientSecret   string `schema:"client_secret"`
 	BearerToken    string
 	ResponseFormat string
+	AuthMethod    AuthMethodValue
 }
 
 func (tReq *IntrospectionRequest) Execute(introspectionEndpoint string, verbose bool, httpClient *http.Client) (tResp *IntrospectionResponse, err error) {
@@ -28,6 +29,11 @@ func (tReq *IntrospectionRequest) Execute(introspectionEndpoint string, verbose 
 	err = encoder.Encode(tReq, body)
 	if err != nil {
 		return nil, err
+	}
+
+	if tReq.AuthMethod == AuthMethodClientSecretPost {
+		body.Set("client_id", tReq.ClientID)
+		body.Set("client_secret", tReq.ClientSecret)
 	}
 
 	if verbose {
@@ -40,8 +46,12 @@ func (tReq *IntrospectionRequest) Execute(introspectionEndpoint string, verbose 
 	if err != nil {
 		return nil, err
 	}
-	req.Header.Add("Accept", "application/"+tReq.ResponseFormat)
+
+	if tReq.AuthMethod == AuthMethodClientSecretBasic {
+		req.Header.Add("Accept", "application/"+tReq.ResponseFormat)
+	}
 	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
+
 	resp, err := httpClient.Do(req)
 	if err != nil {
 		return nil, err
@@ -51,7 +61,9 @@ func (tReq *IntrospectionRequest) Execute(introspectionEndpoint string, verbose 
 	}
 	defer resp.Body.Close()
 
-	fmt.Fprintf(os.Stderr, "introspection response status: %s\n", resp.Status)
+	if verbose {
+		fmt.Fprintf(os.Stderr, "introspection response status: %s\n", resp.Status)
+	}
 
 	dec := json.NewDecoder(resp.Body)
 	err = dec.Decode(&tResp)
