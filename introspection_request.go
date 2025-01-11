@@ -14,13 +14,13 @@ import (
 )
 
 type IntrospectionRequest struct {
-	Token          string `schema:"token"`
-	TokenTypeHint  string `schema:"token_type_hint"`
-	ClientID       string `schema:"client_id"`
-	ClientSecret   string `schema:"client_secret"`
-	BearerToken    string
-	ResponseFormat string
-	AuthMethod    AuthMethodValue
+	Token          string          `schema:"token"`
+	TokenTypeHint  string          `schema:"token_type_hint"`
+	ClientID       string          `schema:"client_id"`
+	ClientSecret   string          `schema:"client_secret"`
+	BearerToken    string          `schema:"-"` // not part of the request
+	ResponseFormat string          `schema:"-"` // not part of the request
+	AuthMethod     AuthMethodValue `schema:"-"` // not part of the request
 }
 
 func (tReq *IntrospectionRequest) Execute(introspectionEndpoint string, verbose bool, httpClient *http.Client) (tResp *IntrospectionResponse, err error) {
@@ -31,14 +31,24 @@ func (tReq *IntrospectionRequest) Execute(introspectionEndpoint string, verbose 
 		return nil, err
 	}
 
-	if tReq.AuthMethod == AuthMethodClientSecretPost {
-		body.Set("client_id", tReq.ClientID)
-		body.Set("client_secret", tReq.ClientSecret)
+	if tReq.AuthMethod == AuthMethodClientSecretBasic {
+		body.Del("client_id")
+		body.Del("client_secret")
 	}
 
 	if verbose {
 		fmt.Fprintf(os.Stderr, "introspection endpoint: %s\n", introspectionEndpoint)
-		fmt.Fprintf(os.Stderr, "introspection request body: %s\n", body.Encode())
+		maskedBody := url.Values{}
+		for k, v := range body {
+			if k == "client_secret" {
+				maskedBody.Set(k, "*****")
+			} else {
+				maskedBody[k] = v
+			}
+		}
+		if len(maskedBody) > 0 {
+			fmt.Fprintf(os.Stderr, "introspection request body: %s\n", maskedBody.Encode())
+		}
 	}
 
 	req, err := http.NewRequest("POST", introspectionEndpoint, strings.NewReader(body.Encode()))
@@ -48,8 +58,10 @@ func (tReq *IntrospectionRequest) Execute(introspectionEndpoint string, verbose 
 	}
 
 	if tReq.AuthMethod == AuthMethodClientSecretBasic {
-		req.Header.Add("Accept", "application/"+tReq.ResponseFormat)
+		req.SetBasicAuth(tReq.ClientID, tReq.ClientSecret)
 	}
+
+	req.Header.Add("Accept", "application/"+tReq.ResponseFormat)
 	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 
 	resp, err := httpClient.Do(req)

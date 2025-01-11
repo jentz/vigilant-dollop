@@ -45,7 +45,7 @@ type Config struct {
 	JWKSEndpoint                       string
 	SkipTLSVerify                      bool
 	Verbose                            bool
-	AuthMethod            AuthMethodValue
+	AuthMethod                         AuthMethodValue
 }
 
 func assignIfEmpty[T any](a *T, b T) {

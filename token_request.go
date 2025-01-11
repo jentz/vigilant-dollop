@@ -31,6 +31,11 @@ func (tReq *TokenRequest) Execute(tokenEndpoint string, verbose bool, httpClient
 		return nil, err
 	}
 
+	if tReq.AuthMethod == AuthMethodClientSecretBasic {
+		body.Del("client_id")
+		body.Del("client_secret")
+	}
+
 	if verbose {
 		fmt.Fprintf(os.Stderr, "token endpoint: %s\n", tokenEndpoint)
 		maskedBody := url.Values{}
@@ -44,11 +49,6 @@ func (tReq *TokenRequest) Execute(tokenEndpoint string, verbose bool, httpClient
 		if len(maskedBody) > 0 {
 			fmt.Fprintf(os.Stderr, "token request body: %s\n", maskedBody.Encode())
 		}
-	}
-
-	if tReq.AuthMethod == AuthMethodClientSecretBasic {
-		body.Del("client_id")
-		body.Del("client_secret")
 	}
 
 	req, err := http.NewRequest("POST", tokenEndpoint, strings.NewReader(body.Encode()))
