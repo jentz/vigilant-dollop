@@ -14,6 +14,7 @@ import (
 type PushedAuthorizationRequest struct {
 	ResponseType        string `schema:"response_type"`
 	ClientID            string `schema:"client_id"`
+	ClientSecret        string `schema:"client_secret"`
 	RedirectURI         string `schema:"redirect_uri"`
 	Scope               string `schema:"scope"`
 	Prompt              string `schema:"prompt,omitempty"`
@@ -26,7 +27,7 @@ type PushedAuthorizationRequest struct {
 	CodeChallenge       string `schema:"code_challenge,omitempty"`
 }
 
-func (parReq *PushedAuthorizationRequest) Execute(pushedAuthEndpoint string, httpClient *http.Client, customArgs ...string) (parResp *PushedAuthorizationResponse, err error) {
+func (parReq *PushedAuthorizationRequest) Execute(pushedAuthEndpoint string, verbose bool, httpClient *http.Client, customArgs ...string) (parResp *PushedAuthorizationResponse, err error) {
 
 	_, err = url.Parse(parReq.RedirectURI)
 	if err != nil {
@@ -47,7 +48,20 @@ func (parReq *PushedAuthorizationRequest) Execute(pushedAuthEndpoint string, htt
 		body.Set(kv[0], kv[1])
 	}
 
-	fmt.Fprintf(os.Stderr, "pushed authorization endpoint: %s\n", pushedAuthEndpoint)
+	if verbose {
+		fmt.Fprintf(os.Stderr, "pushed authorization endpoint: %s\n", pushedAuthEndpoint)
+		maskedBody := url.Values{}
+		for k, v := range body {
+			if k == "client_secret" {
+				maskedBody.Set(k, "*****")
+			} else {
+				maskedBody[k] = v
+			}
+		}
+		if len(maskedBody) > 0 {
+			fmt.Fprintf(os.Stderr, "pushed authorization request body: %s\n", maskedBody.Encode())
+		}
+	}
 
 	req, err := http.NewRequest("POST", pushedAuthEndpoint, strings.NewReader(body.Encode()))
 	if err != nil {
@@ -59,11 +73,15 @@ func (parReq *PushedAuthorizationRequest) Execute(pushedAuthEndpoint string, htt
 		return nil, err
 	}
 	defer resp.Body.Close()
-	fmt.Fprintf(os.Stderr, "pushed auth response status: %s\n", resp.Status)
+
+	if verbose {
+		fmt.Fprintf(os.Stderr, "pushed auth response status: %s\n", resp.Status)
+	}
+
 	dec := json.NewDecoder(resp.Body)
 	err = dec.Decode(&parResp)
 	if err != nil {
-		return nil, fmt.Errorf("error while parsing token response")
+		return nil, fmt.Errorf("error while parsing pushed authorization response")
 	}
 
 	return parResp, nil

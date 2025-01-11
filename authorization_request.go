@@ -26,10 +26,10 @@ type AuthorizationRequest struct {
 	RequestURI          string `schema:"request_uri,omitempty"`
 }
 
-func (aReq *AuthorizationRequest) Execute(authEndpoint string, verbose bool, customArgs ...string) (aResp *AuthorizationResponse, err error) {
+func (aReq *AuthorizationRequest) Execute(authEndpoint string, callback string, verbose bool, customArgs ...string) (aResp *AuthorizationResponse, err error) {
 
 	callbackEndpoint := &callbackEndpoint{}
-	callbackURL, err := url.Parse(aReq.RedirectURI)
+	callbackURL, err := url.Parse(callback)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "unable to parse redirect uri %s because %v\n", aReq.RedirectURI, err)
 		return nil, err

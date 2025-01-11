@@ -43,6 +43,7 @@ func (c *AuthorizationCodeFlow) Run() error {
 		parReq := PushedAuthorizationRequest{
 			ResponseType: "code",
 			ClientID:     c.Config.ClientID,
+			ClientSecret: c.Config.ClientSecret,
 			Scope:        c.FlowConfig.Scopes,
 			RedirectURI:  c.FlowConfig.CallbackURI,
 			Prompt:       c.FlowConfig.Prompt,
@@ -58,7 +59,7 @@ func (c *AuthorizationCodeFlow) Run() error {
 			parReq.CodeChallenge = pkceCodeChallenge(codeVerifier)
 			parReq.CodeChallengeMethod = "S256"
 		}
-		parResp, err := parReq.Execute(c.Config.AuthorizationEndpoint, client, c.FlowConfig.CustomArgs...)
+		parResp, err := parReq.Execute(c.Config.PushedAuthorizationRequestEndpoint, c.Config.Verbose, client, c.FlowConfig.CustomArgs...)
 		if err != nil {
 			return err
 		}
@@ -88,7 +89,7 @@ func (c *AuthorizationCodeFlow) Run() error {
 		}
 	}
 
-	aResp, err := aReq.Execute(c.Config.AuthorizationEndpoint, c.Config.Verbose, c.FlowConfig.CustomArgs...)
+	aResp, err := aReq.Execute(c.Config.AuthorizationEndpoint, c.FlowConfig.CallbackURI, c.Config.Verbose, c.FlowConfig.CustomArgs...)
 	if err != nil {
 		return err
 	}
