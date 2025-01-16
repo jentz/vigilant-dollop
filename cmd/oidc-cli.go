@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"os"
 	"slices"
+
+	oidc "github.com/jentz/vigilant-dollop"
 )
 
 type CommandRunner interface {
@@ -15,7 +17,7 @@ type CommandRunner interface {
 type Command struct {
 	Name      string
 	Help      string
-	Configure func(name string, args []string) (config CommandRunner, output string, err error)
+	Configure func(name string, args []string, cfg *oidc.Config) (config CommandRunner, output string, err error)
 }
 
 var commands = []Command{
@@ -47,7 +49,7 @@ Usage:
 	fmt.Fprintf(os.Stderr, "Run `oidc-cli <command> -h` to get help for a specific command\n\n")
 }
 
-func runCommand(name string, args []string) {
+func runCommand(name string, args []string, globalConf *oidc.Config) {
 
 	cmdIdx := slices.IndexFunc(commands, func(cmd Command) bool {
 		return cmd.Name == name
@@ -65,7 +67,7 @@ func runCommand(name string, args []string) {
 		os.Exit(0)
 	}
 
-	command, output, err := cmd.Configure(name, args)
+	command, output, err := cmd.Configure(name, args, globalConf)
 	if errors.Is(err, flag.ErrHelp) {
 		fmt.Println(output)
 		os.Exit(2)
@@ -83,15 +85,24 @@ func runCommand(name string, args []string) {
 
 func main() {
 	flag.Usage = usage
-	flag.Parse()
+
+	globalConf, args, output, err := parseGlobalFlags("global flags", os.Args[1:])
+	if errors.Is(err, flag.ErrHelp) {
+		fmt.Println(output)
+		os.Exit(2)
+	} else if err != nil {
+		fmt.Println("got error:", err)
+		fmt.Println("output:\n", output)
+		os.Exit(1)
+	}
 
 	// If no command is specified, print usage and exit
-	if flag.NArg() < 1 {
+	if len(args) < 1 {
 		usage()
 		os.Exit(1)
 	}
 
-	subCmd := flag.Arg(0)
-	subCmdArgs := flag.Args()[1:]
-	runCommand(subCmd, subCmdArgs)
+	subCmd := args[0]
+	subCmdArgs := args[1:]
+	runCommand(subCmd, subCmdArgs, globalConf)
 }

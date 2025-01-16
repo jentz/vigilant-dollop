@@ -9,17 +9,16 @@ import (
 	oidc "github.com/jentz/vigilant-dollop"
 )
 
-func parseIntrospectFlags(name string, args []string) (runner CommandRunner, output string, err error) {
+func parseIntrospectFlags(name string, args []string, oidcConf *oidc.Config) (runner CommandRunner, output string, err error) {
 	flags := flag.NewFlagSet(name, flag.ContinueOnError)
 	var buf bytes.Buffer
 	flags.SetOutput(&buf)
 
-	var oidcConf oidc.Config
-	flags.StringVar(&oidcConf.IssuerUrl, "issuer", "", "set issuer url (required)")
-	flags.StringVar(&oidcConf.DiscoveryEndpoint, "discovery-url", "", "override discovery url")
+	flags.StringVar(&oidcConf.IssuerUrl, "issuer", oidcConf.IssuerUrl, "set issuer url (required)")
+	flags.StringVar(&oidcConf.DiscoveryEndpoint, "discovery-url", oidcConf.DiscoveryEndpoint, "override discovery url")
 	flags.StringVar(&oidcConf.IntrospectionEndpoint, "introspection-url", "", "override introspection url")
-	flags.StringVar(&oidcConf.ClientID, "client-id", "", "set client ID (required)")
-	flags.StringVar(&oidcConf.ClientSecret, "client-secret", "", "set client secret (required unless bearer token is provided)")
+	flags.StringVar(&oidcConf.ClientID, "client-id", oidcConf.ClientID, "set client ID (required)")
+	flags.StringVar(&oidcConf.ClientSecret, "client-secret", oidcConf.ClientSecret, "set client secret (required unless bearer token is provided)")
 
 	var flowConf oidc.IntrospectFlowConfig
 	flags.StringVar(&flowConf.BearerToken, "bearer-token", "", "bearer token for authorization (required unless client secret is provided)")
@@ -27,7 +26,7 @@ func parseIntrospectFlags(name string, args []string) (runner CommandRunner, out
 	flags.StringVar(&flowConf.TokenTypeHint, "token-type", "access_token", "token type hint (e.g. access_token")
 
 	runner = &oidc.IntrospectFlow{
-		Config:     &oidcConf,
+		Config:     oidcConf,
 		FlowConfig: &flowConf,
 	}
 
