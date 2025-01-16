@@ -12,19 +12,20 @@ import (
 )
 
 type PushedAuthorizationRequest struct {
-	ResponseType        string `schema:"response_type"`
-	ClientID            string `schema:"client_id"`
-	ClientSecret        string `schema:"client_secret"`
-	RedirectURI         string `schema:"redirect_uri"`
-	Scope               string `schema:"scope"`
-	Prompt              string `schema:"prompt,omitempty"`
-	AcrValues           string `schema:"acr_values,omitempty"`
-	LoginHint           string `schema:"login_hint,omitempty"`
-	MaxAge              string `schema:"max_age,omitempty"`
-	UILocales           string `schema:"ui_locales,omitempty"`
-	State               string `schema:"state,omitempty"`
-	CodeChallengeMethod string `schema:"code_challenge_method,omitempty"`
-	CodeChallenge       string `schema:"code_challenge,omitempty"`
+	ResponseType        string          `schema:"response_type"`
+	ClientID            string          `schema:"client_id"`
+	ClientSecret        string          `schema:"client_secret"`
+	RedirectURI         string          `schema:"redirect_uri"`
+	Scope               string          `schema:"scope"`
+	Prompt              string          `schema:"prompt,omitempty"`
+	AcrValues           string          `schema:"acr_values,omitempty"`
+	LoginHint           string          `schema:"login_hint,omitempty"`
+	MaxAge              string          `schema:"max_age,omitempty"`
+	UILocales           string          `schema:"ui_locales,omitempty"`
+	State               string          `schema:"state,omitempty"`
+	CodeChallengeMethod string          `schema:"code_challenge_method,omitempty"`
+	CodeChallenge       string          `schema:"code_challenge,omitempty"`
+	AuthMethod          AuthMethodValue `schema:"-"` // not part of the request
 }
 
 func (parReq *PushedAuthorizationRequest) Execute(pushedAuthEndpoint string, verbose bool, httpClient *http.Client, customArgs ...string) (parResp *PushedAuthorizationResponse, err error) {
@@ -42,10 +43,15 @@ func (parReq *PushedAuthorizationRequest) Execute(pushedAuthEndpoint string, ver
 		return nil, err
 	}
 
-	// Add custom args to the query string
+	// Add custom args to the request
 	for _, arg := range customArgs {
 		kv := strings.SplitN(arg, "=", 2)
 		body.Set(kv[0], kv[1])
+	}
+
+	if parReq.AuthMethod == AuthMethodClientSecretBasic {
+		body.Del("client_id")
+		body.Del("client_secret")
 	}
 
 	if verbose {
@@ -68,6 +74,11 @@ func (parReq *PushedAuthorizationRequest) Execute(pushedAuthEndpoint string, ver
 		return nil, err
 	}
 	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
+
+	if parReq.AuthMethod == AuthMethodClientSecretBasic {
+		req.SetBasicAuth(parReq.ClientID, parReq.ClientSecret)
+	}
+
 	resp, err := httpClient.Do(req)
 	if err != nil {
 		return nil, err

@@ -22,6 +22,7 @@ func (c *ClientCredentialsFlow) Run() error {
 		GrantType:    "client_credentials",
 		ClientID:     c.Config.ClientID,
 		ClientSecret: c.Config.ClientSecret,
+		AuthMethod:   c.Config.AuthMethod,
 	}
 
 	if c.FlowConfig.Scopes != "" {

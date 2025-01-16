@@ -19,6 +19,7 @@ func parseTokenRefreshFlags(name string, args []string, oidcConf *oidc.Config) (
 	flags.StringVar(&oidcConf.IntrospectionEndpoint, "introspection-url", "", "override introspection url")
 	flags.StringVar(&oidcConf.ClientID, "client-id", oidcConf.ClientID, "set client ID")
 	flags.StringVar(&oidcConf.ClientSecret, "client-secret", oidcConf.ClientSecret, "set client secret")
+	flags.Var(&oidcConf.AuthMethod, "auth-method", "auth method to use (client_secret_basic or client_secret_post)")
 
 	var flowConf oidc.TokenRefreshFlowConfig
 	flags.StringVar(&flowConf.RefreshToken, "refresh-token", "", "refresh token to be used for token refresh")

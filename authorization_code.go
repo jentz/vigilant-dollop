@@ -52,6 +52,7 @@ func (c *AuthorizationCodeFlow) Run() error {
 			MaxAge:       c.FlowConfig.MaxAge,
 			UILocales:    c.FlowConfig.UILocales,
 			State:        c.FlowConfig.State,
+			AuthMethod:   c.Config.AuthMethod,
 		}
 		if c.FlowConfig.PKCE {
 			// Starting with a byte array of 31-96 bytes ensures that the base64 encoded string will be between 43 and 128 characters long as required by RFC7636
@@ -98,6 +99,7 @@ func (c *AuthorizationCodeFlow) Run() error {
 		GrantType:    "authorization_code",
 		ClientID:     c.Config.ClientID,
 		ClientSecret: c.Config.ClientSecret,
+		AuthMethod:   c.Config.AuthMethod,
 		RedirectURI:  c.FlowConfig.CallbackURI,
 		CodeVerifier: codeVerifier,
 		Code:         aResp.Code,

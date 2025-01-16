@@ -69,7 +69,7 @@ func runCommand(name string, args []string, globalConf *oidc.Config) {
 
 	command, output, err := cmd.Configure(name, args, globalConf)
 	if errors.Is(err, flag.ErrHelp) {
-		fmt.Println(output)
+		fmt.Fprintf(os.Stderr, "error: %v\n", output)
 		os.Exit(2)
 	} else if err != nil {
 		fmt.Println("got error:", err)
