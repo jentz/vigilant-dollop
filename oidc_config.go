@@ -18,6 +18,7 @@ type Config struct {
 	UserinfoEndpoint      string
 	JWKSEndpoint          string
 	SkipTLSVerify         bool
+	Verbose               bool
 }
 
 func assignIfEmpty(a *string, b string) {

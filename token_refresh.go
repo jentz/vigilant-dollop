@@ -35,7 +35,7 @@ func (c *TokenRefreshFlow) Run() error {
 		},
 	}
 
-	resp, err := req.Execute(c.Config.TokenEndpoint, client)
+	resp, err := req.Execute(c.Config.TokenEndpoint, c.Config.Verbose, client)
 	if err != nil {
 		return err
 	}

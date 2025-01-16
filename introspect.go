@@ -36,7 +36,7 @@ func (c *IntrospectFlow) Run() error {
 		},
 	}
 
-	resp, err := req.Execute(c.Config.IntrospectionEndpoint, client)
+	resp, err := req.Execute(c.Config.IntrospectionEndpoint, c.Config.Verbose, client)
 	if err != nil {
 		return err
 	}

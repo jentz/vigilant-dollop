@@ -22,14 +22,28 @@ type TokenRequest struct {
 	RefreshToken string `schema:"refresh_token,omitempty"`
 }
 
-func (tReq *TokenRequest) Execute(tokenEndpoint string, httpClient *http.Client) (tResp *TokenResponse, err error) {
+func (tReq *TokenRequest) Execute(tokenEndpoint string, verbose bool, httpClient *http.Client) (tResp *TokenResponse, err error) {
 	encoder := schema.NewEncoder()
 	body := url.Values{}
 	err = encoder.Encode(tReq, body)
 	if err != nil {
 		return nil, err
 	}
-	fmt.Fprintf(os.Stderr, "token endpoint: %s\n", tokenEndpoint)
+
+	if verbose {
+		fmt.Fprintf(os.Stderr, "token endpoint: %s\n", tokenEndpoint)
+		maskedBody := url.Values{}
+		for k, v := range body {
+			if k == "client_secret" {
+				maskedBody.Set(k, "*****")
+			} else {
+				maskedBody[k] = v
+			}
+		}
+		if len(maskedBody) > 0 {
+			fmt.Fprintf(os.Stderr, "token request body: %s\n", maskedBody.Encode())
+		}
+	}
 
 	req, err := http.NewRequest("POST", tokenEndpoint, strings.NewReader(body.Encode()))
 	if err != nil {
@@ -41,7 +55,11 @@ func (tReq *TokenRequest) Execute(tokenEndpoint string, httpClient *http.Client)
 		return nil, err
 	}
 	defer resp.Body.Close()
-	fmt.Fprintf(os.Stderr, "token response status: %s\n", resp.Status)
+
+	if verbose {
+		fmt.Fprintf(os.Stderr, "token response status: %s\n", resp.Status)
+	}
+
 	dec := json.NewDecoder(resp.Body)
 	err = dec.Decode(&tResp)
 	if err != nil {

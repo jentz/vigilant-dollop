@@ -25,7 +25,7 @@ type AuthorizationRequest struct {
 	CodeChallenge       string `schema:"code_challenge,omitempty"`
 }
 
-func (aReq *AuthorizationRequest) Execute(authEndpoint string, customArgs ...string) (aResp *AuthorizationResponse, err error) {
+func (aReq *AuthorizationRequest) Execute(authEndpoint string, verbose bool, customArgs ...string) (aResp *AuthorizationResponse, err error) {
 
 	callbackEndpoint := &callbackEndpoint{}
 	callbackURL, err := url.Parse(aReq.RedirectURI)
@@ -33,7 +33,7 @@ func (aReq *AuthorizationRequest) Execute(authEndpoint string, customArgs ...str
 		fmt.Fprintf(os.Stderr, "unable to parse redirect uri %s because %v\n", aReq.RedirectURI, err)
 		return nil, err
 	}
-	callbackEndpoint.start(callbackURL.Host, callbackURL.Path)
+	callbackEndpoint.start(callbackURL.Host, callbackURL.Path, verbose)
 
 	authURL, err := url.Parse(authEndpoint)
 	if err != nil {
@@ -55,7 +55,10 @@ func (aReq *AuthorizationRequest) Execute(authEndpoint string, customArgs ...str
 
 	authURL.RawQuery = query.Encode()
 	requestURL := authURL.String()
-	fmt.Fprintf(os.Stderr, "authorization request: %s\n", requestURL)
+
+	if verbose {
+		fmt.Fprintf(os.Stderr, "authorization request: %s\n", requestURL)
+	}
 
 	err = browser.OpenURL(requestURL)
 	if err != nil {
