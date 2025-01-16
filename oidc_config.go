@@ -8,17 +8,18 @@ import (
 )
 
 type Config struct {
-	ClientID              string
-	ClientSecret          string
-	IssuerUrl             string
-	DiscoveryEndpoint     string
-	AuthorizationEndpoint string
-	TokenEndpoint         string
-	IntrospectionEndpoint string
-	UserinfoEndpoint      string
-	JWKSEndpoint          string
-	SkipTLSVerify         bool
-	Verbose               bool
+	ClientID                           string
+	ClientSecret                       string
+	IssuerUrl                          string
+	DiscoveryEndpoint                  string
+	AuthorizationEndpoint              string
+	PushedAuthorizationRequestEndpoint string
+	TokenEndpoint                      string
+	IntrospectionEndpoint              string
+	UserinfoEndpoint                   string
+	JWKSEndpoint                       string
+	SkipTLSVerify                      bool
+	Verbose                            bool
 }
 
 func assignIfEmpty(a *string, b string) {
@@ -43,6 +44,7 @@ func (c *Config) DiscoverEndpoints() {
 	}
 
 	assignIfEmpty(&c.AuthorizationEndpoint, discoveryConfig.AuthorizationEndpoint)
+	assignIfEmpty(&c.PushedAuthorizationRequestEndpoint, discoveryConfig.PushedAuthorizationRequestEndpoint)
 	assignIfEmpty(&c.TokenEndpoint, discoveryConfig.TokenEndpoint)
 	assignIfEmpty(&c.IntrospectionEndpoint, discoveryConfig.IntrospectionEndpoint)
 	assignIfEmpty(&c.UserinfoEndpoint, discoveryConfig.UserinfoEndpoint)
