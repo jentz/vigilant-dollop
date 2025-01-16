@@ -24,6 +24,7 @@ func parseIntrospectFlags(name string, args []string, oidcConf *oidc.Config) (ru
 	flags.StringVar(&flowConf.BearerToken, "bearer-token", "", "bearer token for authorization (required unless client secret is provided)")
 	flags.StringVar(&flowConf.Token, "token", "", "token to be introspected or '-' to read token from stdin (required)")
 	flags.StringVar(&flowConf.TokenTypeHint, "token-type", "access_token", "token type hint (e.g. access_token")
+	flags.StringVar(&flowConf.ResponseFormat, "response-format", "json", "requested format (e.g. json, jwt, token-introspection+jwt)")
 
 	runner = &oidc.IntrospectFlow{
 		Config:     oidcConf,

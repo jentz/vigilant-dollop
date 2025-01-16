@@ -12,20 +12,22 @@ type IntrospectFlow struct {
 }
 
 type IntrospectFlowConfig struct {
-	BearerToken   string
-	Token         string
-	TokenTypeHint string
+	BearerToken    string
+	Token          string
+	TokenTypeHint  string
+	ResponseFormat string
 }
 
 func (c *IntrospectFlow) Run() error {
 	c.Config.DiscoverEndpoints()
 
 	req := IntrospectionRequest{
-		ClientID:      c.Config.ClientID,
-		ClientSecret:  c.Config.ClientSecret,
-		Token:         c.FlowConfig.Token,
-		TokenTypeHint: c.FlowConfig.TokenTypeHint,
-		BearerToken:   c.FlowConfig.BearerToken,
+		ClientID:       c.Config.ClientID,
+		ClientSecret:   c.Config.ClientSecret,
+		Token:          c.FlowConfig.Token,
+		TokenTypeHint:  c.FlowConfig.TokenTypeHint,
+		BearerToken:    c.FlowConfig.BearerToken,
+		ResponseFormat: c.FlowConfig.ResponseFormat,
 	}
 
 	client := &http.Client{
