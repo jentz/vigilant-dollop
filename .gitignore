@@ -31,3 +31,6 @@ dist/
 
 # asdf
 .tool-versions
+
+# local tmp
+tmp/
