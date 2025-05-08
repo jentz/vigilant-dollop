@@ -3,8 +3,10 @@ package main
 import (
 	"bytes"
 	"flag"
+	"fmt"
 
 	oidc "github.com/jentz/vigilant-dollop"
+	"github.com/jentz/vigilant-dollop/pkg/crypto"
 )
 
 func parseAuthorizationCodeFlags(name string, args []string, oidcConf *oidc.Config) (runner CommandRunner, output string, err error) {
@@ -20,6 +22,8 @@ func parseAuthorizationCodeFlags(name string, args []string, oidcConf *oidc.Conf
 	flags.StringVar(&oidcConf.ClientSecret, "client-secret", oidcConf.ClientSecret, "set client secret (required if not using PKCE)")
 	flags.BoolVar(&oidcConf.SkipTLSVerify, "skip-tls-verify", oidcConf.SkipTLSVerify, "skip TLS certificate verification")
 	flags.Var(&oidcConf.AuthMethod, "auth-method", "auth method to use (client_secret_basic or client_secret_post)")
+	flags.StringVar(&oidcConf.PrivateKeyFile, "private-key", "", "file to read private key from (eg. for DPoP)")
+	flags.StringVar(&oidcConf.PublicKeyFile, "public-key", "", "file to read public key from (eg. for DPoP)")
 
 	var flowConf oidc.AuthorizationCodeFlowConfig
 	flags.StringVar(&flowConf.Scopes, "scopes", "openid", "set scopes as a space separated list")
@@ -33,6 +37,7 @@ func parseAuthorizationCodeFlags(name string, args []string, oidcConf *oidc.Conf
 	flags.Var(&flowConf.CustomArgs, "custom", "custom authorization parameters, argument can be given multiple times")
 	flags.BoolVar(&flowConf.PKCE, "pkce", false, "use proof-key for code exchange (PKCE)")
 	flags.BoolVar(&flowConf.PAR, "par", false, "use pushed authorization requests")
+	flags.BoolVar(&flowConf.DPoP, "dpop", false, "use dpop-protected access tokens")
 
 	runner = &oidc.AuthorizationCodeFlow{
 		Config:     oidcConf,
@@ -68,11 +73,39 @@ func parseAuthorizationCodeFlags(name string, args []string, oidcConf *oidc.Conf
 			flowConf.CallbackURI == "",
 			"callback-uri is required",
 		},
+		{
+			flowConf.DPoP && (oidcConf.PrivateKeyFile == "" || oidcConf.PublicKeyFile == ""),
+			"private-key and public-key are required when using DPoP",
+		},
 	}
 
 	for _, check := range invalidArgsChecks {
 		if check.condition {
 			return nil, check.message, flag.ErrHelp
+		}
+	}
+
+	// Parse the private key if provided
+	if oidcConf.PrivateKeyFile != "" {
+		pem, err := crypto.ReadPEMBlockFromFile(oidcConf.PrivateKeyFile)
+		if err != nil {
+			return nil, fmt.Sprintf("failed to read private key file: %v", err), flag.ErrHelp
+		}
+		oidcConf.PrivateKey, err = crypto.ParsePrivateKeyPEMBlock(pem)
+		if err != nil {
+			return nil, fmt.Sprintf("failed to parse private key: %v", err), flag.ErrHelp
+		}
+	}
+
+	// Parse the public key if provided
+	if oidcConf.PublicKeyFile != "" {
+		pem, err := crypto.ReadPEMBlockFromFile(oidcConf.PublicKeyFile)
+		if err != nil {
+			return nil, fmt.Sprintf("failed to read public key file: %v", err), flag.ErrHelp
+		}
+		oidcConf.PublicKey, err = crypto.ParsePublicKeyPEMBlock(pem)
+		if err != nil {
+			return nil, fmt.Sprintf("failed to parse public key: %v", err), flag.ErrHelp
 		}
 	}
 

@@ -1,4 +1,4 @@
-package oidc
+package crypto
 
 import (
 	"testing"
@@ -26,7 +26,7 @@ func TestPkceCodeVerifier(t *testing.T) {
 					t.Errorf("pkceCodeVerifier() recover = %v, wantPanic = %v", r, tt.wantPanic)
 				}
 			}()
-			gotBytes := len(pkceCodeVerifier(tt.generateBytes))
+			gotBytes := len(CreatePkceCodeVerifier(tt.generateBytes))
 			if gotBytes != tt.wantBytes {
 				t.Errorf("err got %v, want %v", gotBytes, tt.wantBytes)
 			}
