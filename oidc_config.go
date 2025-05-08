@@ -46,6 +46,10 @@ type Config struct {
 	SkipTLSVerify                      bool
 	Verbose                            bool
 	AuthMethod                         AuthMethodValue
+	PrivateKeyFile                     string
+	PublicKeyFile                      string
+	PrivateKey                         any
+	PublicKey                          any
 }
 
 func assignIfEmpty[T any](a *T, b T) {
