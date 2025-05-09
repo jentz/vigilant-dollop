@@ -11,10 +11,10 @@ import (
 )
 
 type AuthorizationRequest struct {
-	ResponseType        string `schema:"response_type"`
+	ResponseType        string `schema:"response_type,omitempty"`
 	ClientID            string `schema:"client_id"`
-	RedirectURI         string `schema:"redirect_uri"`
-	Scope               string `schema:"scope"`
+	RedirectURI         string `schema:"redirect_uri,omitempty"`
+	Scope               string `schema:"scope,omitempty"`
 	Prompt              string `schema:"prompt,omitempty"`
 	AcrValues           string `schema:"acr_values,omitempty"`
 	LoginHint           string `schema:"login_hint,omitempty"`
