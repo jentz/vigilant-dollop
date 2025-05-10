@@ -85,18 +85,27 @@ func parseAuthorizationCodeFlags(name string, args []string, oidcConf *oidc.Conf
 		}
 	}
 
-	// Parse the private and public keys if provided
+	// Parse the private key if provided
 	if oidcConf.PrivateKeyFile != "" {
-		oidcConf.PrivateKey, err = crypto.ReadPrivateKeyFromFile(oidcConf.PrivateKeyFile)
+		pem, err := crypto.ReadPEMBlockFromFile(oidcConf.PrivateKeyFile)
 		if err != nil {
 			return nil, fmt.Sprintf("failed to read private key file: %v", err), flag.ErrHelp
 		}
+		oidcConf.PrivateKey, err = crypto.ParsePrivateKeyPEMBlock(pem)
+		if err != nil {
+			return nil, fmt.Sprintf("failed to parse private key: %v", err), flag.ErrHelp
+		}
 	}
 
+	// Parse the public key if provided
 	if oidcConf.PublicKeyFile != "" {
-		oidcConf.PublicKey, err = crypto.ReadPublicKeyFromFile(oidcConf.PublicKeyFile)
+		pem, err := crypto.ReadPEMBlockFromFile(oidcConf.PublicKeyFile)
 		if err != nil {
 			return nil, fmt.Sprintf("failed to read public key file: %v", err), flag.ErrHelp
+		}
+		oidcConf.PublicKey, err = crypto.ParsePublicKeyPEMBlock(pem)
+		if err != nil {
+			return nil, fmt.Sprintf("failed to parse public key: %v", err), flag.ErrHelp
 		}
 	}
 

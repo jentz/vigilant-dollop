@@ -4,45 +4,37 @@ import (
 	"crypto/x509"
 	"encoding/pem"
 	"fmt"
-	"log"
 	"os"
 )
 
-func ReadPublicKeyFromFile(filePath string) (any, error) {
+func ReadPEMBlockFromFile(filePath string) (*pem.Block, error) {
 	// Read the public key from the file
 	data, err := os.ReadFile(filePath)
 	if err != nil {
-		return nil, fmt.Errorf("failed to read public key file: %w", err)
+		return nil, err
 	}
 
 	// Decode the PEM block
 	block, _ := pem.Decode(data)
 	if block == nil {
-		log.Fatalf("failed to decode PEM block for public key")
+		return nil, fmt.Errorf("failed to decode PEM block")
 	}
 
+	return block, nil
+}
+
+func ParsePublicKeyPEMBlock(block *pem.Block) (any, error) {
 	key, err := x509.ParsePKIXPublicKey(block.Bytes)
 	if err != nil {
-		log.Fatalf("failed to parse public key: %v", err)
+		return nil, err
 	}
 
 	return key, nil
 }
 
-func ReadPrivateKeyFromFile(filePath string) (any, error) {
-	// Read the private key from the file
-	data, err := os.ReadFile(filePath)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read private key file: %w", err)
-	}
-	// Decode the PEM block
-	block, _ := pem.Decode(data)
-	if block == nil {
-		log.Fatalf("failed to decode PEM block for private key")
-	}
-
+func ParsePrivateKeyPEMBlock(block *pem.Block) (any, error) {
 	var key any
-
+	var err error
 	switch block.Type {
 	case "PRIVATE KEY":
 		key, err = x509.ParsePKCS8PrivateKey(block.Bytes)
@@ -55,7 +47,7 @@ func ReadPrivateKeyFromFile(filePath string) (any, error) {
 	}
 
 	if err != nil {
-		log.Fatalf("failed to parse private key: %v", err)
+		return nil, err
 	}
 
 	return key, nil
