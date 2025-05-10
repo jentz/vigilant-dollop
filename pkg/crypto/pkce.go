@@ -1,4 +1,4 @@
-package oidc
+package crypto
 
 import (
 	"crypto/rand"
@@ -7,7 +7,7 @@ import (
 	"math/big"
 )
 
-func randomInt(min, max int) int {
+func RandomInt(min, max int) int {
 	nBig, err := rand.Int(rand.Reader, big.NewInt(int64(max-min)))
 	if err != nil {
 		panic(err)
@@ -15,7 +15,7 @@ func randomInt(min, max int) int {
 	return int(nBig.Int64()) + min
 }
 
-func pkceCodeVerifier(n int) string {
+func CreatePkceCodeVerifier(n int) string {
 	if n < 32 || n > 96 {
 		panic("Code verifier length before base64 encoding must be between 32 and 96 bytes")
 	}
@@ -28,7 +28,7 @@ func pkceCodeVerifier(n int) string {
 	return base64.URLEncoding.WithPadding(base64.NoPadding).EncodeToString(b)
 }
 
-func pkceCodeChallenge(codeVerifier string) string {
+func CreatePkceCodeChallenge(codeVerifier string) string {
 	sha := sha256.Sum256([]byte(codeVerifier))
 	return base64.RawURLEncoding.EncodeToString(sha[:])
 }
