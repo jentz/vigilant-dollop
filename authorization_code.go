@@ -30,6 +30,7 @@ type AuthorizationCodeFlowConfig struct {
 
 func (c *AuthorizationCodeFlow) Run() error {
 	c.Config.DiscoverEndpoints()
+	c.Config.ReadKeyFiles()
 
 	aReq := AuthorizationRequest{}
 	var codeVerifier string

@@ -3,10 +3,8 @@ package main
 import (
 	"bytes"
 	"flag"
-	"fmt"
 
 	oidc "github.com/jentz/vigilant-dollop"
-	"github.com/jentz/vigilant-dollop/pkg/crypto"
 )
 
 func parseAuthorizationCodeFlags(name string, args []string, oidcConf *oidc.Config) (runner CommandRunner, output string, err error) {
@@ -82,30 +80,6 @@ func parseAuthorizationCodeFlags(name string, args []string, oidcConf *oidc.Conf
 	for _, check := range invalidArgsChecks {
 		if check.condition {
 			return nil, check.message, flag.ErrHelp
-		}
-	}
-
-	// Parse the private key if provided
-	if oidcConf.PrivateKeyFile != "" {
-		pem, err := crypto.ReadPEMBlockFromFile(oidcConf.PrivateKeyFile)
-		if err != nil {
-			return nil, fmt.Sprintf("failed to read private key file: %v", err), flag.ErrHelp
-		}
-		oidcConf.PrivateKey, err = crypto.ParsePrivateKeyPEMBlock(pem)
-		if err != nil {
-			return nil, fmt.Sprintf("failed to parse private key: %v", err), flag.ErrHelp
-		}
-	}
-
-	// Parse the public key if provided
-	if oidcConf.PublicKeyFile != "" {
-		pem, err := crypto.ReadPEMBlockFromFile(oidcConf.PublicKeyFile)
-		if err != nil {
-			return nil, fmt.Sprintf("failed to read public key file: %v", err), flag.ErrHelp
-		}
-		oidcConf.PublicKey, err = crypto.ParsePublicKeyPEMBlock(pem)
-		if err != nil {
-			return nil, fmt.Sprintf("failed to parse public key: %v", err), flag.ErrHelp
 		}
 	}
 
