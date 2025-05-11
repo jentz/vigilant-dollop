@@ -22,6 +22,10 @@ func ReadPEMBlockFromFile(filePath string) (*pem.Block, error) {
 }
 
 func ParsePublicKeyPEMBlock(block *pem.Block) (any, error) {
+	if block == nil {
+		return nil, fmt.Errorf("no PEM block provided")
+	}
+
 	key, err := x509.ParsePKIXPublicKey(block.Bytes)
 	if err != nil {
 		return nil, err
@@ -31,6 +35,10 @@ func ParsePublicKeyPEMBlock(block *pem.Block) (any, error) {
 }
 
 func ParsePrivateKeyPEMBlock(block *pem.Block) (any, error) {
+	if block == nil {
+		return nil, fmt.Errorf("no PEM block provided")
+	}
+
 	var key any
 	var err error
 	switch block.Type {
