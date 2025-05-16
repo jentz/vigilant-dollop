@@ -110,11 +110,16 @@ func (c *AuthorizationCodeFlow) Run() error {
 	}
 
 	if c.FlowConfig.DPoP {
-		dpopHeader, err := crypto.CreateDpopProof(c.Config.PrivateKey, c.Config.PublicKey, "POST", c.Config.TokenEndpoint)
+		builder := crypto.NewDPoPProofBuilder()
+		builder.PublicKey(c.Config.PublicKey)
+		builder.PrivateKey(c.Config.PrivateKey)
+		builder.Method("POST")
+		builder.Url(c.Config.TokenEndpoint)
+		dpopProof, err := builder.Build()
 		if err != nil {
 			return err
 		}
-		tReq.DPoPHeader = dpopHeader
+		tReq.DPoPHeader = dpopProof.String()
 	}
 
 	tResp, err := tReq.Execute(c.Config.TokenEndpoint, c.Config.Verbose, client)

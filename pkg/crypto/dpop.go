@@ -9,6 +9,8 @@ import (
 	"encoding/base64"
 	"fmt"
 	"math/big"
+	"net/url"
+	"regexp"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -32,83 +34,162 @@ type ed25519JWK struct {
 	Kty       string `json:"kty"`
 }
 
-func CreateDpopProof(privateKey any, publicKey any, method string, url string) (string, error) {
+type DPoPProof string
 
-	var jwk any
-	var alg string
-	var jwtSigningMethod jwt.SigningMethod
+type DPoPProofBuilder struct {
+	publicKey     any
+	privateKey    any
+	method        string
+	url           string
+	jti           string
+	alg           string
+	jwk           any
+	token         *jwt.Token
+	signingMethod jwt.SigningMethod
+	signedToken   string
+	errs          []error
+}
 
-	switch k := publicKey.(type) {
+func (d *DPoPProof) String() string {
+	return string(*d)
+}
+
+func NewDPoPProofBuilder() (d *DPoPProofBuilder) {
+	d = &DPoPProofBuilder{}
+	return d
+}
+
+func (d *DPoPProofBuilder) PublicKey(k any) *DPoPProofBuilder {
+	if k == nil {
+		d.errs = append(d.errs, fmt.Errorf("publicKey cannot be nil"))
+	}
+	d.publicKey = k
+	return d
+}
+
+func (d *DPoPProofBuilder) PrivateKey(k any) *DPoPProofBuilder {
+	if k == nil {
+		d.errs = append(d.errs, fmt.Errorf("privateKey cannot be nil"))
+	}
+	d.privateKey = k
+	return d
+}
+
+func (d *DPoPProofBuilder) Method(s string) *DPoPProofBuilder {
+	matched, err := regexp.MatchString("^[A-Z]+$", s)
+	if err != nil {
+		d.errs = append(d.errs, fmt.Errorf("error matching method with regex: %w", err))
+	} else if !matched {
+		d.errs = append(d.errs, fmt.Errorf("method must contain only uppercase letters"))
+	}
+	d.method = s
+	return d
+}
+
+func (d *DPoPProofBuilder) Url(s string) *DPoPProofBuilder {
+	_, err := url.Parse(s)
+	if err != nil {
+		d.errs = append(d.errs, fmt.Errorf("error parsing url: %w", err))
+	}
+	d.url = s
+	return d
+}
+
+func (d *DPoPProofBuilder) Build() (*DPoPProof, error) {
+	if len(d.errs) > 0 {
+		return nil, fmt.Errorf("build errors: %v", d.errs)
+	}
+
+	err := d.generateJTI()
+	if err != nil {
+		return nil, err
+	}
+
+	err = d.parseKeys()
+	if err != nil {
+		return nil, err
+	}
+
+	d.constructJWT()
+	err = d.signJWT()
+	if err != nil {
+		return nil, err
+	}
+
+	p := DPoPProof(d.signedToken)
+	return &p, nil
+}
+
+func (d *DPoPProofBuilder) parseKeys() error {
+	switch k := d.publicKey.(type) {
 
 	case *ecdsa.PublicKey:
-		if _, ok := privateKey.(*ecdsa.PrivateKey); !ok {
-			return "", fmt.Errorf("private key type does not match public key type")
+		if _, ok := d.privateKey.(*ecdsa.PrivateKey); !ok {
+			return fmt.Errorf("private key type does not match public key type")
 		}
-		jwk = convertPublicKeyToEcdsaJwk(publicKey.(*ecdsa.PublicKey))
-		alg = ecdsaAlgorithmString(publicKey.(*ecdsa.PublicKey))
-		jwtSigningMethod = jwt.SigningMethodES256
+		d.jwk = ecdsaPublicKeyToJWK(d.publicKey.(*ecdsa.PublicKey))
+		d.alg = ecdsaAlgorithmString(d.publicKey.(*ecdsa.PublicKey))
+		d.signingMethod = jwt.SigningMethodES256
 
 	case *rsa.PublicKey:
-		if _, ok := privateKey.(*rsa.PrivateKey); !ok {
-			return "", fmt.Errorf("private key type does not match public key type")
+		if _, ok := d.privateKey.(*rsa.PrivateKey); !ok {
+			return fmt.Errorf("private key type does not match public key type")
 		}
-		jwk = convertPublicKeyToRsaJwk(publicKey.(*rsa.PublicKey))
-		alg = rsaAlgorithmString(publicKey.(*rsa.PublicKey))
-		jwtSigningMethod = jwt.SigningMethodRS256
+		d.jwk = rsaPublicKeyToJWK(d.publicKey.(*rsa.PublicKey))
+		d.alg = rsaAlgorithmString(d.publicKey.(*rsa.PublicKey))
+		d.signingMethod = jwt.SigningMethodRS256
 
 	case ed25519.PublicKey:
-		if _, ok := privateKey.(ed25519.PrivateKey); !ok {
-			return "", fmt.Errorf("private key type does not match public key type")
+		if _, ok := d.privateKey.(ed25519.PrivateKey); !ok {
+			return fmt.Errorf("private key type does not match public key type")
 		}
-		jwk = convertPublicKeyToEd25519Jwk(publicKey.(ed25519.PublicKey))
-		alg = ed25519AlgorithmString()
-		jwtSigningMethod = jwt.SigningMethodEdDSA
+		d.jwk = ed25519PublicKeyToJWK(d.publicKey.(ed25519.PublicKey))
+		d.alg = ed25519AlgorithmString()
+		d.signingMethod = jwt.SigningMethodEdDSA
 
 	default:
-		return "", fmt.Errorf("unsupported public key type: %T", k)
+		return fmt.Errorf("unsupported public key type: %T", k)
 	}
-
-	token := constructDpopToken(jwk, alg, generateJTI(), method, url, jwtSigningMethod)
-
-	signedToken, err := token.SignedString(privateKey)
-	if err != nil {
-		return "", fmt.Errorf("error signing DPoP JWT: %w", err)
-	}
-
-	return signedToken, nil
+	return nil
 }
 
-func constructDpopToken(jwk any, alg string, jti string, method string, url string, jwtSigningMethod jwt.SigningMethod) *jwt.Token {
+func (d *DPoPProofBuilder) constructJWT() {
 	header := map[string]any{
 		"typ": "dpop+jwt",
-		"alg": alg,
-		"jwk": jwk,
+		"alg": d.alg,
+		"jwk": d.jwk,
 	}
-
 	claims := jwt.MapClaims{
-		"jti": jti,
-		"htm": method,
-		"htu": url,
+		"jti": d.jti,
+		"htm": d.method,
+		"htu": d.url,
 		"iat": time.Now().Unix(),
 	}
-
-	token := jwt.NewWithClaims(jwtSigningMethod, claims)
-	token.Header = header
-
-	return token
+	d.token = jwt.NewWithClaims(d.signingMethod, claims)
+	d.token.Header = header
 }
 
-func generateJTI() string {
+func (d *DPoPProofBuilder) signJWT() error {
+	signedToken, err := d.token.SignedString(d.privateKey)
+	if err != nil {
+		return fmt.Errorf("error signing DPoP JWT: %w", err)
+	}
+	d.signedToken = signedToken
+	return nil
+}
+
+func (d *DPoPProofBuilder) generateJTI() error {
 	randomBytes := make([]byte, 30)
 	_, err := rand.Read(randomBytes)
 	if err != nil {
-		panic(err)
+		return fmt.Errorf("error generating random bytes: %w", err)
 	}
 	hash := sha256.Sum256(randomBytes)
-	return base64.RawURLEncoding.EncodeToString(hash[:])
+	d.jti = base64.RawURLEncoding.EncodeToString(hash[:])
+	return nil
 }
 
-func convertPublicKeyToEcdsaJwk(k *ecdsa.PublicKey) any {
+func ecdsaPublicKeyToJWK(k *ecdsa.PublicKey) any {
 	// Calculate the size of the byte array representation of an elliptic curve coordinate
 	// and ensure that the byte array representation of the key is padded correctly.
 	bits := k.Curve.Params().BitSize
@@ -122,7 +203,7 @@ func convertPublicKeyToEcdsaJwk(k *ecdsa.PublicKey) any {
 	}
 }
 
-func convertPublicKeyToRsaJwk(k *rsa.PublicKey) any {
+func rsaPublicKeyToJWK(k *rsa.PublicKey) any {
 	return &rsaJWK{
 		Exponent: base64.RawURLEncoding.EncodeToString(big.NewInt(int64(k.E)).Bytes()),
 		Modulus:  base64.RawURLEncoding.EncodeToString(k.N.Bytes()),
@@ -130,7 +211,7 @@ func convertPublicKeyToRsaJwk(k *rsa.PublicKey) any {
 	}
 }
 
-func convertPublicKeyToEd25519Jwk(k ed25519.PublicKey) any {
+func ed25519PublicKeyToJWK(k ed25519.PublicKey) any {
 	return &ed25519JWK{
 		PublicKey: base64.RawURLEncoding.EncodeToString(k),
 		Kty:       "OKP",
