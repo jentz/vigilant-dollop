@@ -1,19 +1,112 @@
 package crypto
 
 import (
+	"crypto/dsa"
 	"crypto/ecdsa"
 	"crypto/ed25519"
 	"crypto/elliptic"
 	"crypto/rand"
 	"crypto/rsa"
-	"fmt"
+	"reflect"
 	"testing"
 
 	"github.com/golang-jwt/jwt/v5"
 )
 
-func TestCreateDpopProof(t *testing.T) {
+func TestNewDPoPProofBuilder(t *testing.T) {
+	privateKey, _ := rsa.GenerateKey(rand.Reader, 2048)
+	publicKey := &privateKey.PublicKey
 
+	tests := []struct {
+		name       string
+		privateKey any
+		publicKey  any
+		method     string
+		url        string
+	}{
+		{
+			name:       "create dpop proof builder",
+			privateKey: privateKey,
+			publicKey:  publicKey,
+			method:     "POST",
+			url:        "https://example.com",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			dpopProofBuilder := NewDPoPProofBuilder().PrivateKey(tt.privateKey).PublicKey(tt.publicKey).Method(tt.method).Url(tt.url)
+			if dpopProofBuilder == nil {
+				t.Errorf("NewDPoPProofBuilder() = %v, want %v", dpopProofBuilder, "not nil")
+			}
+			if dpopProofBuilder.privateKey != tt.privateKey {
+				t.Errorf("NewDPoPProofBuilder().PrivateKey() = %v, want %v", dpopProofBuilder.privateKey, tt.privateKey)
+			}
+			if dpopProofBuilder.publicKey != tt.publicKey {
+				t.Errorf("NewDPoPProofBuilder().PublicKey() = %v, want %v", dpopProofBuilder.publicKey, tt.publicKey)
+			}
+			if dpopProofBuilder.method != tt.method {
+				t.Errorf("NewDPoPProofBuilder().Method() = %v, want %v", dpopProofBuilder.method, tt.method)
+			}
+			if dpopProofBuilder.url != tt.url {
+				t.Errorf("NewDPoPProofBuilder().Url() = %v, want %v", dpopProofBuilder.url, tt.url)
+			}
+		})
+	}
+}
+
+func TestNewDPoPProofBuilderError(t *testing.T) {
+	privateKey, _ := rsa.GenerateKey(rand.Reader, 2048)
+	publicKey := &privateKey.PublicKey
+
+	tests := []struct {
+		name       string
+		privateKey any
+		publicKey  any
+		method     string
+		url        string
+	}{
+		{
+			name:       "create dpop proof builder with nil for private key",
+			privateKey: nil,
+			publicKey:  publicKey,
+			method:     "POST",
+			url:        "https://example.com",
+		},
+		{
+			name:       "create dpop proof builder with nil for public key",
+			privateKey: privateKey,
+			publicKey:  nil,
+			method:     "POST",
+			url:        "https://example.com",
+		},
+		{
+			name:       "create dpop proof builder with invalid method",
+			privateKey: privateKey,
+			publicKey:  publicKey,
+			method:     "POSTasd",
+			url:        "https://example.com",
+		},
+		{
+			name:       "create dpop proof builder with invalid url",
+			privateKey: privateKey,
+			publicKey:  publicKey,
+			method:     "POST",
+			url:        "http://example.com:example",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			dpopProofBuilder := NewDPoPProofBuilder().PrivateKey(tt.privateKey).PublicKey(tt.publicKey).Method(tt.method).Url(tt.url)
+			if len(dpopProofBuilder.errs) < 1 {
+				t.Errorf("NewDPoPProofBuilder() = %v, want %v", dpopProofBuilder.errs, "not empty")
+			}
+		})
+	}
+}
+
+func TestParseKeys(t *testing.T) {
 	privateKeyRSA, _ := rsa.GenerateKey(rand.Reader, 2048)
 	publicKeyRSA := &privateKeyRSA.PublicKey
 
@@ -26,224 +119,208 @@ func TestCreateDpopProof(t *testing.T) {
 		name                  string
 		privateKey            any
 		publicKey             any
-		method                string
-		url                   string
 		expectedSigningMethod jwt.SigningMethod
 	}{
 		{
-			name:                  "create dpop header using rsa key",
+			name:                  "parse rsa keys",
 			privateKey:            privateKeyRSA,
 			publicKey:             publicKeyRSA,
-			method:                "POST",
-			url:                   "https://example.com",
 			expectedSigningMethod: jwt.SigningMethodRS256,
 		},
 		{
-			name:                  "create dpop header using ecdsa key",
+			name:                  "parse ecdsa keys",
 			privateKey:            privateKeyECDSA,
 			publicKey:             publicKeyECDSA,
-			method:                "POST",
-			url:                   "https://example.com",
 			expectedSigningMethod: jwt.SigningMethodES256,
 		},
 		{
-			name:                  "create dpop header using ed25519 key",
+			name:                  "parse ed25519 keys",
 			privateKey:            privateKeyEd25519,
 			publicKey:             publicKeyEd25519,
-			method:                "POST",
-			url:                   "https://example.com",
 			expectedSigningMethod: jwt.SigningMethodEdDSA,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// verify that CreateDpopProof does not return an error
-			// and that the generated token is not empty
-			got, err := CreateDpopProof(tt.privateKey, tt.publicKey, tt.method, tt.url)
+			builder := &DPoPProofBuilder{
+				privateKey: tt.privateKey,
+				publicKey:  tt.publicKey,
+			}
+			err := builder.parseKeys()
 			if err != nil {
-				t.Errorf("CreateDpopProof() error = %v, wantErr %v", err, nil)
+				t.Errorf("parseKeys() error = %v, wantErr %v", err, nil)
 			}
-			if got == "" {
-				t.Errorf("CreateDpopProof() got = %v, want %v", got, "not empty")
-			}
-
-			// parse the token and verify the signing key type
-			token, err := jwt.Parse(got, func(token *jwt.Token) (any, error) {
-				switch token.Method.(type) {
-				case *jwt.SigningMethodRSA:
-					if tt.expectedSigningMethod != jwt.SigningMethodRS256 {
-						return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
-					}
-					return publicKeyRSA, nil
-				case *jwt.SigningMethodECDSA:
-					if tt.expectedSigningMethod != jwt.SigningMethodES256 {
-						return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
-					}
-					return publicKeyECDSA, nil
-				case *jwt.SigningMethodEd25519:
-					if tt.expectedSigningMethod != jwt.SigningMethodEdDSA {
-						return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
-					}
-					return publicKeyEd25519, nil
-				default:
-					return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
-				}
-			})
-			if err != nil {
-				t.Errorf("jwt.Parse() = %v, want %v", err, nil)
-			}
-			if token == nil {
-				t.Errorf("token = %v, want %v", token, "not nil")
-			}
-
-			// verify that all parts of the token are populated
-			if token.Header == nil {
-				t.Errorf("token.Header = %v, want %v", token.Header, "not nil")
-			}
-			claims, ok := token.Claims.(jwt.MapClaims)
-			if !ok {
-				t.Errorf("token.Claims type = %v, want %v", token.Claims, "jwt.MapClaims")
-			}
-			if claims == nil {
-				t.Errorf("token.Claims = %v, want %v", token.Claims, "not nil")
-			}
-			if token.Signature == nil {
-				t.Errorf("token.Signature = %v, want %v", token.Signature, "not nil")
+			if builder.signingMethod != tt.expectedSigningMethod {
+				t.Errorf("parseKeys() signingMethod = %v, want %v", builder.signingMethod, tt.expectedSigningMethod)
 			}
 		})
 	}
 }
 
-func TestCreateDpopProofError(t *testing.T) {
+func TestParseKeysError(t *testing.T) {
 	privateKeyRSA, _ := rsa.GenerateKey(rand.Reader, 2048)
 	publicKeyRSA := &privateKeyRSA.PublicKey
 
 	privateKeyECDSA, _ := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
 	publicKeyECDSA := &privateKeyECDSA.PublicKey
 
+	var params dsa.Parameters
+	err := dsa.GenerateParameters(&params, rand.Reader, dsa.L2048N256)
+	if err != nil {
+		panic(err)
+	}
+
+	var privateKeyDSA dsa.PrivateKey
+	privateKeyDSA.Parameters = params
+	err = dsa.GenerateKey(&privateKeyDSA, rand.Reader)
+	if err != nil {
+		panic(err)
+	}
+
+	publicKeyDSA := privateKeyDSA.PublicKey
+
 	tests := []struct {
 		name       string
 		privateKey any
 		publicKey  any
-		method     string
-		url        string
 	}{
 		{
-			name:       "create dpop header using public key as private key",
-			privateKey: publicKeyRSA,
-			publicKey:  publicKeyRSA,
-			method:     "POST",
-			url:        "https://example.com",
-		},
-		{
-			name:       "create dpop header using private key as public key",
-			privateKey: privateKeyRSA,
-			publicKey:  privateKeyRSA,
-			method:     "POST",
-			url:        "https://example.com",
-		},
-		{
-			name:       "create dpop header with non-matching key types",
-			privateKey: privateKeyRSA,
-			publicKey:  publicKeyECDSA,
-			method:     "POST",
-			url:        "https://example.com",
-		},
-		{
-			name:       "create dpop header using empty keys",
+			name:       "parse nil keys",
 			privateKey: nil,
 			publicKey:  nil,
-			method:     "POST",
-			url:        "https://example.com",
 		},
 		{
-			name:       "create dpop header with invalid keys",
+			name:       "parse invalid keys",
 			privateKey: "1234",
 			publicKey:  "1234",
-			method:     "POST",
-			url:        "https://example.com",
+		},
+		{
+			name:       "parse with public key as private key",
+			privateKey: publicKeyRSA,
+			publicKey:  publicKeyRSA,
+		},
+		{
+			name:       "parse with private key as public key",
+			privateKey: privateKeyRSA,
+			publicKey:  privateKeyRSA,
+		},
+		{
+			name:       "parse with non-matching key types",
+			privateKey: privateKeyRSA,
+			publicKey:  publicKeyECDSA,
+		},
+		{
+			name:       "parse unsupported key type",
+			privateKey: privateKeyDSA,
+			publicKey:  publicKeyDSA,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := CreateDpopProof(tt.privateKey, tt.publicKey, tt.method, tt.url)
-			if err == nil {
-				t.Errorf("CreateDpopProof() error = %v, wantErr %v", err, "not nil")
+			builder := &DPoPProofBuilder{
+				privateKey: tt.privateKey,
+				publicKey:  tt.publicKey,
 			}
-			if got != "" {
-				t.Errorf("CreateDpopProof() got = %v, want %v", got, "empty")
+			err := builder.parseKeys()
+			if err == nil {
+				t.Errorf("parseKeys() error = %v, wantErr %v", err, "not nil")
 			}
 		})
 	}
 }
 
-func TestConstructDpopToken(t *testing.T) {
-
+func TestConstructJWT(t *testing.T) {
 	privateKey, _ := rsa.GenerateKey(rand.Reader, 2048)
 	publicKey := &privateKey.PublicKey
 
 	tests := []struct {
-		name          string
-		jwk           any
-		alg           string
-		jti           string
-		method        string
-		url           string
-		signingMethod jwt.SigningMethod
+		name             string
+		dpopProofBuilder *DPoPProofBuilder
 	}{
 		{
-			name:          "generate valid dpop token",
-			jwk:           convertPublicKeyToRsaJwk(publicKey),
-			alg:           rsaAlgorithmString(publicKey),
-			jti:           generateJTI(),
-			method:        "POST",
-			url:           "https://example.com",
-			signingMethod: jwt.SigningMethodRS256,
+			name: "construct valid jwt",
+			dpopProofBuilder: &DPoPProofBuilder{
+				jwk:           rsaPublicKeyToJWK(publicKey),
+				alg:           rsaAlgorithmString(publicKey),
+				method:        "POST",
+				url:           "https://example.com",
+				signingMethod: jwt.SigningMethodRS256,
+			},
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := constructDpopToken(tt.jwk, tt.alg, tt.jti, tt.method, tt.url, tt.signingMethod)
+			tt.dpopProofBuilder.generateJTI()
+			tt.dpopProofBuilder.constructJWT()
+			got := tt.dpopProofBuilder.token
+			if got == nil {
+				t.Errorf("token got = %v, want %v", got, "not nil")
+			}
+			if reflect.TypeOf(got) != reflect.TypeOf(&jwt.Token{}) {
+				t.Errorf("token type = %v, want %v", reflect.TypeOf(got), "*jwt.Token")
+			}
 			if got.Header == nil {
-				t.Errorf("got.Header = %v, want %v", got.Header, "not nil")
+				t.Errorf("token.Header = %v, want %v", got.Header, "not nil")
 			}
-			if got.Header["alg"] != tt.alg {
-				t.Errorf("got.Header[\"alg\"] = %v, want %v", got.Header["alg"], tt.alg)
-			}
-			if got.Header["typ"] != "dpop+jwt" {
-				t.Errorf("got.Header[\"typ\"] = %v, want %v", got.Header["typ"], "dpop+jwt")
-			}
-			if got.Header["jwk"] != tt.jwk {
-				t.Errorf("got.Header[\"jwk\"] = %v, want %v", got.Header["jwk"], tt.jwk)
+			header := got.Header
+			if header["typ"] != "dpop+jwt" {
+				t.Errorf("header[\"typ\"] = %v, want %v", header["typ"], "dpop+jwt")
 			}
 			if got.Claims == nil {
-				t.Errorf("got.Claims = %v, want %v", got.Claims, "not nil")
+				t.Errorf("token.Claims = %v, want %v", got.Claims, "not nil")
 			}
-			claims, ok := got.Claims.(jwt.MapClaims)
-			if !ok {
-				t.Errorf("got.Claims = %v, want %v", got.Claims, "jwt.MapClaims")
+			claims := got.Claims.(jwt.MapClaims)
+			if claims["jti"] != tt.dpopProofBuilder.jti {
+				t.Errorf("claims[\"jti\"] = %v, want %v", claims["jti"], tt.dpopProofBuilder.jti)
 			}
-			if claims["jti"] != tt.jti {
-				t.Errorf("claims\"jti\"] = %v, want %v", claims["jti"], tt.jti)
+			if claims["htm"] != tt.dpopProofBuilder.method {
+				t.Errorf("claims[\"htm\"] = %v, want %v", claims["htm"], tt.dpopProofBuilder.method)
 			}
-			if claims["htm"] != tt.method {
-				t.Errorf("claims[\"htm\"] = %v, want %v", claims["htm"], tt.method)
-			}
-			if claims["htu"] != tt.url {
-				t.Errorf("claims[\"htu\"] = %v, want %v", claims["htu"], tt.url)
+			if claims["htu"] != tt.dpopProofBuilder.url {
+				t.Errorf("claims[\"htu\"] = %v, want %v", claims["htu"], tt.dpopProofBuilder.url)
 			}
 			if claims["iat"] == nil {
 				t.Errorf("claims[\"iat\"] = %v, want %v", claims["iat"], "not nil")
 			}
-			if got.Method != tt.signingMethod {
-				t.Errorf("got.Method = %v, want %v", got.Method, tt.signingMethod)
+		})
+	}
+}
+
+func TestSignJWT(t *testing.T) {
+	privateKey, _ := rsa.GenerateKey(rand.Reader, 2048)
+	publicKey := &privateKey.PublicKey
+
+	tests := []struct {
+		name             string
+		dpopProofBuilder *DPoPProofBuilder
+	}{
+		{
+			name: "sign valid jwt",
+			dpopProofBuilder: &DPoPProofBuilder{
+				privateKey:    privateKey,
+				publicKey:     publicKey,
+				jwk:           rsaPublicKeyToJWK(publicKey),
+				alg:           rsaAlgorithmString(publicKey),
+				method:        "POST",
+				url:           "https://example.com",
+				signingMethod: jwt.SigningMethodRS256,
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			tt.dpopProofBuilder.generateJTI()
+			tt.dpopProofBuilder.constructJWT()
+			err := tt.dpopProofBuilder.signJWT()
+			if err != nil {
+				t.Errorf("signJWT() error = %v, wantErr %v", err, nil)
 			}
-			signingString, _ := got.SigningString()
-			if signingString == "" {
-				t.Errorf("got.SigningString() = %v, want %v", signingString, "not empty")
+			if tt.dpopProofBuilder.signedToken == "" {
+				t.Errorf("dpopProofBuilder.signedToken = %v, want %v", tt.dpopProofBuilder.signedToken, "not empty")
 			}
 		})
 	}
