@@ -21,6 +21,7 @@ type TokenRequest struct {
 	ClientSecret string          `schema:"client_secret,omitempty"`
 	RefreshToken string          `schema:"refresh_token,omitempty"`
 	AuthMethod   AuthMethodValue `schema:"-"` // not part of the request
+	DPoPHeader   string          `schema:"-"` // not part of the request
 }
 
 func (tReq *TokenRequest) Execute(tokenEndpoint string, verbose bool, httpClient *http.Client) (tResp *TokenResponse, err error) {
@@ -56,6 +57,10 @@ func (tReq *TokenRequest) Execute(tokenEndpoint string, verbose bool, httpClient
 		return nil, err
 	}
 	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
+
+	if tReq.DPoPHeader != "" {
+		req.Header.Add("DPoP", tReq.DPoPHeader)
+	}
 
 	if tReq.AuthMethod == AuthMethodClientSecretBasic {
 		req.SetBasicAuth(tReq.ClientID, tReq.ClientSecret)

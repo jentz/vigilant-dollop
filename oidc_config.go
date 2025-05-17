@@ -7,6 +7,8 @@ import (
 	"log"
 	"net/http"
 	"reflect"
+
+	"github.com/jentz/vigilant-dollop/pkg/crypto"
 )
 
 type AuthMethodValue string
@@ -46,6 +48,10 @@ type Config struct {
 	SkipTLSVerify                      bool
 	Verbose                            bool
 	AuthMethod                         AuthMethodValue
+	PrivateKeyFile                     string
+	PublicKeyFile                      string
+	PrivateKey                         any
+	PublicKey                          any
 }
 
 func assignIfEmpty[T any](a *T, b T) {
@@ -81,6 +87,32 @@ func (c *Config) DiscoverEndpoints() {
 		if AuthMethodValue(method).IsValid() {
 			assignIfEmpty(&c.AuthMethod, AuthMethodValue(method))
 			break
+		}
+	}
+}
+
+func (c *Config) ReadKeyFiles() {
+	// Parse the private key if provided
+	if c.PrivateKeyFile != "" {
+		pem, err := crypto.ReadPEMBlockFromFile(c.PrivateKeyFile)
+		if err != nil {
+			log.Fatal(fmt.Errorf("failed to read private key file: %v", err))
+		}
+		c.PrivateKey, err = crypto.ParsePrivateKeyPEMBlock(pem)
+		if err != nil {
+			log.Fatal(fmt.Errorf("failed to parse private key: %v", err))
+		}
+	}
+
+	// Parse the public key if provided
+	if c.PublicKeyFile != "" {
+		pem, err := crypto.ReadPEMBlockFromFile(c.PublicKeyFile)
+		if err != nil {
+			log.Fatal(fmt.Errorf("failed to read public key file: %v", err))
+		}
+		c.PublicKey, err = crypto.ParsePublicKeyPEMBlock(pem)
+		if err != nil {
+			log.Fatal(fmt.Errorf("failed to parse public key: %v", err))
 		}
 	}
 }

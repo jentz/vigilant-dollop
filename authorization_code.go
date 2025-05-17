@@ -4,6 +4,8 @@ import (
 	"crypto/tls"
 	"fmt"
 	"net/http"
+
+	"github.com/jentz/vigilant-dollop/pkg/crypto"
 )
 
 type AuthorizationCodeFlow struct {
@@ -23,10 +25,12 @@ type AuthorizationCodeFlowConfig struct {
 	PKCE        bool
 	CustomArgs  CustomArgs
 	PAR         bool
+	DPoP        bool
 }
 
 func (c *AuthorizationCodeFlow) Run() error {
 	c.Config.DiscoverEndpoints()
+	c.Config.ReadKeyFiles()
 
 	aReq := AuthorizationRequest{}
 	var codeVerifier string
@@ -56,8 +60,8 @@ func (c *AuthorizationCodeFlow) Run() error {
 		}
 		if c.FlowConfig.PKCE {
 			// Starting with a byte array of 31-96 bytes ensures that the base64 encoded string will be between 43 and 128 characters long as required by RFC7636
-			codeVerifier = pkceCodeVerifier(randomInt(32, 96))
-			parReq.CodeChallenge = pkceCodeChallenge(codeVerifier)
+			codeVerifier = crypto.GeneratePKCECodeVerifier(crypto.RandomInt(32, 96))
+			parReq.CodeChallenge = crypto.GeneratePKCECodeChallenge(codeVerifier)
 			parReq.CodeChallengeMethod = "S256"
 		}
 		parResp, err := parReq.Execute(c.Config.PushedAuthorizationRequestEndpoint, c.Config.Verbose, client, c.FlowConfig.CustomArgs...)
@@ -84,8 +88,8 @@ func (c *AuthorizationCodeFlow) Run() error {
 		}
 		if c.FlowConfig.PKCE {
 			// Starting with a byte array of 31-96 bytes ensures that the base64 encoded string will be between 43 and 128 characters long as required by RFC7636
-			codeVerifier = pkceCodeVerifier(randomInt(32, 96))
-			aReq.CodeChallenge = pkceCodeChallenge(codeVerifier)
+			codeVerifier = crypto.GeneratePKCECodeVerifier(crypto.RandomInt(32, 96))
+			aReq.CodeChallenge = crypto.GeneratePKCECodeChallenge(codeVerifier)
 			aReq.CodeChallengeMethod = "S256"
 		}
 	}
@@ -105,8 +109,19 @@ func (c *AuthorizationCodeFlow) Run() error {
 		Code:         aResp.Code,
 	}
 
-	tResp, err := tReq.Execute(c.Config.TokenEndpoint, c.Config.Verbose, client)
+	if c.FlowConfig.DPoP {
+		dpopProof, err := crypto.NewDPoPProof(
+			c.Config.PublicKey,
+			c.Config.PrivateKey,
+			"POST",
+			c.Config.TokenEndpoint)
+		if err != nil {
+			return err
+		}
+		tReq.DPoPHeader = dpopProof.String()
+	}
 
+	tResp, err := tReq.Execute(c.Config.TokenEndpoint, c.Config.Verbose, client)
 	if err != nil {
 		return err
 	}
