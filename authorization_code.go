@@ -60,8 +60,8 @@ func (c *AuthorizationCodeFlow) Run() error {
 		}
 		if c.FlowConfig.PKCE {
 			// Starting with a byte array of 31-96 bytes ensures that the base64 encoded string will be between 43 and 128 characters long as required by RFC7636
-			codeVerifier = crypto.CreatePkceCodeVerifier(crypto.RandomInt(32, 96))
-			parReq.CodeChallenge = crypto.CreatePkceCodeChallenge(codeVerifier)
+			codeVerifier = crypto.GeneratePKCECodeVerifier(crypto.RandomInt(32, 96))
+			parReq.CodeChallenge = crypto.GeneratePKCECodeChallenge(codeVerifier)
 			parReq.CodeChallengeMethod = "S256"
 		}
 		parResp, err := parReq.Execute(c.Config.PushedAuthorizationRequestEndpoint, c.Config.Verbose, client, c.FlowConfig.CustomArgs...)
@@ -88,8 +88,8 @@ func (c *AuthorizationCodeFlow) Run() error {
 		}
 		if c.FlowConfig.PKCE {
 			// Starting with a byte array of 31-96 bytes ensures that the base64 encoded string will be between 43 and 128 characters long as required by RFC7636
-			codeVerifier = crypto.CreatePkceCodeVerifier(crypto.RandomInt(32, 96))
-			aReq.CodeChallenge = crypto.CreatePkceCodeChallenge(codeVerifier)
+			codeVerifier = crypto.GeneratePKCECodeVerifier(crypto.RandomInt(32, 96))
+			aReq.CodeChallenge = crypto.GeneratePKCECodeChallenge(codeVerifier)
 			aReq.CodeChallengeMethod = "S256"
 		}
 	}
@@ -110,12 +110,11 @@ func (c *AuthorizationCodeFlow) Run() error {
 	}
 
 	if c.FlowConfig.DPoP {
-		builder := crypto.NewDPoPProofBuilder()
-		builder.PublicKey(c.Config.PublicKey)
-		builder.PrivateKey(c.Config.PrivateKey)
-		builder.Method("POST")
-		builder.Url(c.Config.TokenEndpoint)
-		dpopProof, err := builder.Build()
+		dpopProof, err := crypto.NewDPoPProof(
+			c.Config.PublicKey,
+			c.Config.PrivateKey,
+			"POST",
+			c.Config.TokenEndpoint)
 		if err != nil {
 			return err
 		}

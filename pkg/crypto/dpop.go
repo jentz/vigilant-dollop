@@ -50,13 +50,21 @@ type DPoPProofBuilder struct {
 	errs          []error
 }
 
+func NewDPoPProof(publicKey any, privateKey any, method string, url string) (*DPoPProof, error) {
+	d := NewDPoPProofBuilder().
+		PublicKey(publicKey).
+		PrivateKey(privateKey).
+		Method(method).
+		Url(url)
+	return d.Build()
+}
+
 func (d *DPoPProof) String() string {
 	return string(*d)
 }
 
 func NewDPoPProofBuilder() (d *DPoPProofBuilder) {
-	d = &DPoPProofBuilder{}
-	return d
+	return new(DPoPProofBuilder)
 }
 
 func (d *DPoPProofBuilder) PublicKey(k any) *DPoPProofBuilder {
