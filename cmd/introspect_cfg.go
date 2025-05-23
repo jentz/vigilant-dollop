@@ -14,7 +14,7 @@ func parseIntrospectFlags(name string, args []string, oidcConf *oidc.Config) (ru
 	var buf bytes.Buffer
 	flags.SetOutput(&buf)
 
-	flags.StringVar(&oidcConf.IssuerUrl, "issuer", oidcConf.IssuerUrl, "set issuer url (required)")
+	flags.StringVar(&oidcConf.IssuerURL, "issuer", oidcConf.IssuerURL, "set issuer url (required)")
 	flags.StringVar(&oidcConf.DiscoveryEndpoint, "discovery-url", oidcConf.DiscoveryEndpoint, "override discovery url")
 	flags.StringVar(&oidcConf.IntrospectionEndpoint, "introspection-url", "", "override introspection url")
 	flags.StringVar(&oidcConf.ClientID, "client-id", oidcConf.ClientID, "set client ID (required)")
@@ -49,7 +49,7 @@ func parseIntrospectFlags(name string, args []string, oidcConf *oidc.Config) (ru
 		message   string
 	}{
 		{
-			oidcConf.IssuerUrl == "",
+			oidcConf.IssuerURL == "",
 			"issuer is required",
 		},
 		{

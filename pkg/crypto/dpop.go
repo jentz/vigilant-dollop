@@ -7,6 +7,7 @@ import (
 	"crypto/rsa"
 	"crypto/sha256"
 	"encoding/base64"
+	"errors"
 	"fmt"
 	"math/big"
 	"net/url"
@@ -55,7 +56,7 @@ func NewDPoPProof(publicKey any, privateKey any, method string, url string) (*DP
 		PublicKey(publicKey).
 		PrivateKey(privateKey).
 		Method(method).
-		Url(url)
+		URL(url)
 	return d.Build()
 }
 
@@ -69,7 +70,7 @@ func NewDPoPProofBuilder() (d *DPoPProofBuilder) {
 
 func (d *DPoPProofBuilder) PublicKey(k any) *DPoPProofBuilder {
 	if k == nil {
-		d.errs = append(d.errs, fmt.Errorf("publicKey cannot be nil"))
+		d.errs = append(d.errs, errors.New("publicKey cannot be nil"))
 	}
 	d.publicKey = k
 	return d
@@ -77,7 +78,7 @@ func (d *DPoPProofBuilder) PublicKey(k any) *DPoPProofBuilder {
 
 func (d *DPoPProofBuilder) PrivateKey(k any) *DPoPProofBuilder {
 	if k == nil {
-		d.errs = append(d.errs, fmt.Errorf("privateKey cannot be nil"))
+		d.errs = append(d.errs, errors.New("privateKey cannot be nil"))
 	}
 	d.privateKey = k
 	return d
@@ -88,13 +89,13 @@ func (d *DPoPProofBuilder) Method(s string) *DPoPProofBuilder {
 	if err != nil {
 		d.errs = append(d.errs, fmt.Errorf("error matching method with regex: %w", err))
 	} else if !matched {
-		d.errs = append(d.errs, fmt.Errorf("method must contain only uppercase letters"))
+		d.errs = append(d.errs, errors.New("method must contain only uppercase letters"))
 	}
 	d.method = s
 	return d
 }
 
-func (d *DPoPProofBuilder) Url(s string) *DPoPProofBuilder {
+func (d *DPoPProofBuilder) URL(s string) *DPoPProofBuilder {
 	_, err := url.Parse(s)
 	if err != nil {
 		d.errs = append(d.errs, fmt.Errorf("error parsing url: %w", err))
@@ -130,10 +131,9 @@ func (d *DPoPProofBuilder) Build() (*DPoPProof, error) {
 
 func (d *DPoPProofBuilder) parseKeys() error {
 	switch k := d.publicKey.(type) {
-
 	case *ecdsa.PublicKey:
 		if _, ok := d.privateKey.(*ecdsa.PrivateKey); !ok {
-			return fmt.Errorf("private key type does not match public key type")
+			return errors.New("private key type does not match public key type")
 		}
 		d.jwk = ecdsaPublicKeyToJWK(d.publicKey.(*ecdsa.PublicKey))
 		d.alg = ecdsaAlgorithmString(d.publicKey.(*ecdsa.PublicKey))
@@ -141,7 +141,7 @@ func (d *DPoPProofBuilder) parseKeys() error {
 
 	case *rsa.PublicKey:
 		if _, ok := d.privateKey.(*rsa.PrivateKey); !ok {
-			return fmt.Errorf("private key type does not match public key type")
+			return errors.New("private key type does not match public key type")
 		}
 		d.jwk = rsaPublicKeyToJWK(d.publicKey.(*rsa.PublicKey))
 		d.alg = rsaAlgorithmString(d.publicKey.(*rsa.PublicKey))
@@ -149,7 +149,7 @@ func (d *DPoPProofBuilder) parseKeys() error {
 
 	case ed25519.PublicKey:
 		if _, ok := d.privateKey.(ed25519.PrivateKey); !ok {
-			return fmt.Errorf("private key type does not match public key type")
+			return errors.New("private key type does not match public key type")
 		}
 		d.jwk = ed25519PublicKeyToJWK(d.publicKey.(ed25519.PublicKey))
 		d.alg = ed25519AlgorithmString()

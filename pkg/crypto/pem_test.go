@@ -12,7 +12,6 @@ import (
 )
 
 func TestParsePublicKeyPEMBlock(t *testing.T) {
-
 	privateKeyRSA, _ := rsa.GenerateKey(rand.Reader, 2048)
 	publicKeyRSA := &privateKeyRSA.PublicKey
 	x509RSA, _ := x509.MarshalPKIXPublicKey(publicKeyRSA)
@@ -54,7 +53,6 @@ func TestParsePublicKeyPEMBlock(t *testing.T) {
 }
 
 func TestParsePrivateKeyPEMBlock(t *testing.T) {
-
 	privateKeyRSA, _ := rsa.GenerateKey(rand.Reader, 2048)
 	x509RSAPKCS1 := x509.MarshalPKCS1PrivateKey(privateKeyRSA)
 	x509RSAPKCS8, _ := x509.MarshalPKCS8PrivateKey(privateKeyRSA)

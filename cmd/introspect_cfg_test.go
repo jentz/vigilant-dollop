@@ -8,7 +8,6 @@ import (
 )
 
 func TestParseIntrospectFlagsResult(t *testing.T) {
-
 	var tests = []struct {
 		name     string
 		args     []string
@@ -28,7 +27,7 @@ func TestParseIntrospectFlagsResult(t *testing.T) {
 				"--response-format", "jwt",
 			},
 			oidc.Config{
-				IssuerUrl:             "https://example.com",
+				IssuerURL:             "https://example.com",
 				DiscoveryEndpoint:     "https://example.com/.well-known/openid-configuration",
 				IntrospectionEndpoint: "https://example.com/introspection",
 				ClientID:              "client-id",
@@ -50,7 +49,7 @@ func TestParseIntrospectFlagsResult(t *testing.T) {
 				"--token", "token",
 			},
 			oidc.Config{
-				IssuerUrl:             "https://example.com",
+				IssuerURL:             "https://example.com",
 				DiscoveryEndpoint:     "",
 				IntrospectionEndpoint: "",
 				ClientID:              "client-id",
@@ -72,7 +71,7 @@ func TestParseIntrospectFlagsResult(t *testing.T) {
 				"--token", "token",
 			},
 			oidc.Config{
-				IssuerUrl:             "https://example.com",
+				IssuerURL:             "https://example.com",
 				DiscoveryEndpoint:     "",
 				IntrospectionEndpoint: "",
 				ClientID:              "client-id",
@@ -111,7 +110,6 @@ func TestParseIntrospectFlagsResult(t *testing.T) {
 }
 
 func TestParseIntrospectFlagsError(t *testing.T) {
-
 	var tests = []struct {
 		name string
 		args []string
