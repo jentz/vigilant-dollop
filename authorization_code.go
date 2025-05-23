@@ -1,7 +1,9 @@
 package oidc
 
 import (
+	"context"
 	"crypto/tls"
+	"fmt"
 	"github.com/jentz/vigilant-dollop/pkg/log"
 	"net/http"
 
@@ -28,9 +30,16 @@ type AuthorizationCodeFlowConfig struct {
 	DPoP        bool
 }
 
-func (c *AuthorizationCodeFlow) Run() error {
-	c.Config.DiscoverEndpoints()
-	c.Config.ReadKeyFiles()
+func (c *AuthorizationCodeFlow) Run(ctx context.Context) error {
+	err := c.Config.DiscoverEndpoints(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to discover endpoints: %w", err)
+	}
+
+	err = c.Config.ReadKeyFiles()
+	if err != nil {
+		return fmt.Errorf("failed to read key files: %w", err)
+	}
 
 	aReq := AuthorizationRequest{}
 	var codeVerifier string
