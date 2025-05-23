@@ -6,7 +6,9 @@ import (
 	"flag"
 	"github.com/jentz/vigilant-dollop/pkg/log"
 	"os"
+	"os/signal"
 	"slices"
+	"syscall"
 
 	oidc "github.com/jentz/vigilant-dollop"
 )
@@ -77,7 +79,30 @@ func runCommand(name string, args []string, globalConf *oidc.Config) {
 		os.Exit(1)
 	}
 
-	if err := command.Run(nil); err != nil {
+	ctx, cancel := context.WithCancel(context.Background())
+	signalChan := make(chan os.Signal, 1)
+	signal.Notify(signalChan, os.Interrupt, syscall.SIGTERM)
+
+	go func() {
+		sig := <-signalChan
+		log.ErrPrintf("\nreceived signal: %s, cancelling...\n", sig)
+		cancel()
+	}()
+
+	defer func() {
+		cancel()
+		signal.Stop(signalChan)
+		close(signalChan)
+	}()
+
+	if err := command.Run(ctx); err != nil {
+		if errors.Is(err, context.Canceled) {
+			log.ErrPrintln("operation cancelled")
+			os.Exit(0)
+		} else if errors.Is(err, context.DeadlineExceeded) {
+			log.ErrPrintln("operation timed out")
+			os.Exit(1)
+		}
 		log.ErrPrintf("error: %v\n", err.Error())
 		os.Exit(1)
 	}
