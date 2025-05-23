@@ -12,7 +12,12 @@ func httpRequest(client *http.Client, req *http.Request, response any) error {
 	if err != nil {
 		return err
 	}
-	defer resp.Body.Close()
+	defer func() {
+		cerr := resp.Body.Close()
+		if err == nil && cerr != nil {
+			err = cerr
+		}
+	}()
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {

@@ -14,7 +14,7 @@ func parseTokenRefreshFlags(name string, args []string, oidcConf *oidc.Config) (
 	var buf bytes.Buffer
 	flags.SetOutput(&buf)
 
-	flags.StringVar(&oidcConf.IssuerUrl, "issuer", oidcConf.IssuerUrl, "set issuer url (required)")
+	flags.StringVar(&oidcConf.IssuerURL, "issuer", oidcConf.IssuerURL, "set issuer url (required)")
 	flags.StringVar(&oidcConf.DiscoveryEndpoint, "discovery-url", oidcConf.DiscoveryEndpoint, "override discovery url")
 	flags.StringVar(&oidcConf.IntrospectionEndpoint, "introspection-url", "", "override introspection url")
 	flags.StringVar(&oidcConf.ClientID, "client-id", oidcConf.ClientID, "set client ID")
@@ -47,7 +47,7 @@ func parseTokenRefreshFlags(name string, args []string, oidcConf *oidc.Config) (
 		message   string
 	}{
 		{
-			oidcConf.IssuerUrl == "",
+			oidcConf.IssuerURL == "",
 			"issuer is required",
 		},
 		{

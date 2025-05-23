@@ -8,7 +8,6 @@ import (
 )
 
 func TestParseTokenRefreshFlagsResult(t *testing.T) {
-
 	var tests = []struct {
 		name     string
 		args     []string
@@ -27,7 +26,7 @@ func TestParseTokenRefreshFlagsResult(t *testing.T) {
 				"--scopes", "openid profile email",
 			},
 			oidc.Config{
-				IssuerUrl:             "https://example.com",
+				IssuerURL:             "https://example.com",
 				DiscoveryEndpoint:     "https://example.com/.well-known/openid-configuration",
 				IntrospectionEndpoint: "https://example.com/introspection",
 				ClientID:              "client-id",
@@ -47,7 +46,7 @@ func TestParseTokenRefreshFlagsResult(t *testing.T) {
 				"--refresh-token", "refresh-token",
 			},
 			oidc.Config{
-				IssuerUrl:             "https://example.com",
+				IssuerURL:             "https://example.com",
 				DiscoveryEndpoint:     "",
 				IntrospectionEndpoint: "",
 				ClientID:              "client-id",
@@ -83,7 +82,6 @@ func TestParseTokenRefreshFlagsResult(t *testing.T) {
 }
 
 func TestParseTokenRefreshFlagsError(t *testing.T) {
-
 	var tests = []struct {
 		name string
 		args []string

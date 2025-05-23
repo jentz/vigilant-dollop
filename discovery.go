@@ -24,11 +24,10 @@ type DiscoveryConfiguration struct {
 	TokenEndpointAuthMethods           []string `json:"token_endpoint_auth_methods_supported,omitempty"`
 }
 
-func discover(ctx context.Context, issuer string, httpClient *http.Client, wellKnownUrl ...string) (*DiscoveryConfiguration, error) {
-
+func discover(ctx context.Context, issuer string, httpClient *http.Client, wellKnownURL ...string) (*DiscoveryConfiguration, error) {
 	wellKnown := strings.TrimSuffix(issuer, "/") + DiscoveryEndpoint
-	if len(wellKnownUrl) == 1 && wellKnownUrl[0] != "" {
-		wellKnown = wellKnownUrl[0]
+	if len(wellKnownURL) == 1 && wellKnownURL[0] != "" {
+		wellKnown = wellKnownURL[0]
 	}
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, wellKnown, nil)
 	if err != nil {

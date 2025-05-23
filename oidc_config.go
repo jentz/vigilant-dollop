@@ -19,10 +19,11 @@ const (
 )
 
 func (a *AuthMethodValue) Set(value string) error {
-	if !AuthMethodValue(value).IsValid() {
+	methodValue := AuthMethodValue(value)
+	if !methodValue.IsValid() {
 		return fmt.Errorf("invalid auth method, valid values are %s", []AuthMethodValue{AuthMethodClientSecretBasic, AuthMethodClientSecretPost})
 	}
-	*a = AuthMethodValue(value)
+	*a = methodValue
 	return nil
 }
 
@@ -30,14 +31,14 @@ func (a *AuthMethodValue) String() string {
 	return string(*a)
 }
 
-func (a AuthMethodValue) IsValid() bool {
-	return a == AuthMethodClientSecretBasic || a == AuthMethodClientSecretPost
+func (a *AuthMethodValue) IsValid() bool {
+	return *a == AuthMethodClientSecretBasic || *a == AuthMethodClientSecretPost
 }
 
 type Config struct {
 	ClientID                           string
 	ClientSecret                       string
-	IssuerUrl                          string
+	IssuerURL                          string
 	DiscoveryEndpoint                  string
 	AuthorizationEndpoint              string
 	PushedAuthorizationRequestEndpoint string
@@ -69,7 +70,7 @@ func (c *Config) DiscoverEndpoints() {
 			},
 		},
 	}
-	discoveryConfig, err := discover(ctx, c.IssuerUrl, client, c.DiscoveryEndpoint)
+	discoveryConfig, err := discover(ctx, c.IssuerURL, client, c.DiscoveryEndpoint)
 
 	if err != nil {
 		log.Fatal(err)
@@ -84,8 +85,9 @@ func (c *Config) DiscoverEndpoints() {
 
 	// use first supported auth method unless set through flag
 	for _, method := range discoveryConfig.TokenEndpointAuthMethods {
-		if AuthMethodValue(method).IsValid() {
-			assignIfEmpty(&c.AuthMethod, AuthMethodValue(method))
+		authMethodValue := AuthMethodValue(method)
+		if authMethodValue.IsValid() {
+			assignIfEmpty(&c.AuthMethod, authMethodValue)
 			break
 		}
 	}

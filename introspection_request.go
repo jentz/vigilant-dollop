@@ -3,11 +3,10 @@ package oidc
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
+	"github.com/jentz/vigilant-dollop/pkg/log"
 	"io"
 	"net/http"
 	"net/url"
-	"os"
 	"strings"
 
 	"github.com/gorilla/schema"
@@ -37,7 +36,7 @@ func (tReq *IntrospectionRequest) Execute(introspectionEndpoint string, verbose 
 	}
 
 	if verbose {
-		fmt.Fprintf(os.Stderr, "introspection endpoint: %s\n", introspectionEndpoint)
+		log.ErrPrintf("introspection endpoint: %s\n", introspectionEndpoint)
 		maskedBody := url.Values{}
 		for k, v := range body {
 			if k == "client_secret" {
@@ -47,7 +46,7 @@ func (tReq *IntrospectionRequest) Execute(introspectionEndpoint string, verbose 
 			}
 		}
 		if len(maskedBody) > 0 {
-			fmt.Fprintf(os.Stderr, "introspection request body: %s\n", maskedBody.Encode())
+			log.ErrPrintf("introspection request body: %s\n", maskedBody.Encode())
 		}
 	}
 
@@ -71,10 +70,15 @@ func (tReq *IntrospectionRequest) Execute(introspectionEndpoint string, verbose 
 	if resp.StatusCode != http.StatusOK {
 		return nil, errors.New("token introspection request failed: " + resp.Status)
 	}
-	defer resp.Body.Close()
+	defer func() {
+		cerr := resp.Body.Close()
+		if err == nil && cerr != nil {
+			err = cerr
+		}
+	}()
 
 	if verbose {
-		fmt.Fprintf(os.Stderr, "introspection response status: %s\n", resp.Status)
+		log.ErrPrintf("introspection response status: %s\n", resp.Status)
 	}
 
 	dec := json.NewDecoder(resp.Body)
@@ -82,16 +86,15 @@ func (tReq *IntrospectionRequest) Execute(introspectionEndpoint string, verbose 
 	if err != nil {
 		if tReq.ResponseFormat == "json" {
 			return nil, errors.New("failed to parse introspection response")
-		} else {
-			// assume the response is a plain JWT
-			body, err := io.ReadAll(resp.Body)
-			if err != nil {
-				return nil, errors.New("failed to read introspection response body")
-			}
-			tResp = &IntrospectionResponse{
-				Active: true,
-				Jwt:    string(body),
-			}
+		}
+		// assume the response is a plain JWT
+		body, err := io.ReadAll(resp.Body)
+		if err != nil {
+			return nil, errors.New("failed to read introspection response body")
+		}
+		tResp = &IntrospectionResponse{
+			Active: true,
+			Jwt:    string(body),
 		}
 	}
 

@@ -8,7 +8,6 @@ import (
 )
 
 func TestParseAuthorizationCodeFlagsResult(t *testing.T) {
-
 	var tests = []struct {
 		name     string
 		args     []string
@@ -42,7 +41,7 @@ func TestParseAuthorizationCodeFlagsResult(t *testing.T) {
 				"--public-key", "path/to/public-key.pem",
 			},
 			oidc.Config{
-				IssuerUrl:             "https://example.com",
+				IssuerURL:             "https://example.com",
 				DiscoveryEndpoint:     "https://example.com/.well-known/openid-configuration",
 				AuthorizationEndpoint: "https://example.com/authorize",
 				TokenEndpoint:         "https://example.com/token",
@@ -77,7 +76,7 @@ func TestParseAuthorizationCodeFlagsResult(t *testing.T) {
 				"--callback-uri", "http://localhost:8080/callback",
 			},
 			oidc.Config{
-				IssuerUrl:             "https://example.com",
+				IssuerURL:             "https://example.com",
 				DiscoveryEndpoint:     "",
 				AuthorizationEndpoint: "",
 				TokenEndpoint:         "",
@@ -101,7 +100,7 @@ func TestParseAuthorizationCodeFlagsResult(t *testing.T) {
 				"--callback-uri", "http://localhost:8080/callback",
 			},
 			oidc.Config{
-				IssuerUrl:             "https://example.com",
+				IssuerURL:             "https://example.com",
 				DiscoveryEndpoint:     "",
 				AuthorizationEndpoint: "",
 				TokenEndpoint:         "",
@@ -125,7 +124,7 @@ func TestParseAuthorizationCodeFlagsResult(t *testing.T) {
 				"--scopes", "openid profile email",
 			},
 			oidc.Config{
-				IssuerUrl:             "https://example.com",
+				IssuerURL:             "https://example.com",
 				DiscoveryEndpoint:     "",
 				AuthorizationEndpoint: "",
 				TokenEndpoint:         "",
@@ -150,7 +149,7 @@ func TestParseAuthorizationCodeFlagsResult(t *testing.T) {
 				"--pkce",
 			},
 			oidc.Config{
-				IssuerUrl:             "https://example.com",
+				IssuerURL:             "https://example.com",
 				DiscoveryEndpoint:     "",
 				AuthorizationEndpoint: "",
 				TokenEndpoint:         "",
@@ -174,7 +173,7 @@ func TestParseAuthorizationCodeFlagsResult(t *testing.T) {
 				"--pkce",
 			},
 			oidc.Config{
-				IssuerUrl:             "https://example.com",
+				IssuerURL:             "https://example.com",
 				DiscoveryEndpoint:     "",
 				AuthorizationEndpoint: "",
 				TokenEndpoint:         "",
@@ -201,7 +200,7 @@ func TestParseAuthorizationCodeFlagsResult(t *testing.T) {
 				"--public-key", "path/to/public-key.pem",
 			},
 			oidc.Config{
-				IssuerUrl:             "https://example.com",
+				IssuerURL:             "https://example.com",
 				DiscoveryEndpoint:     "",
 				AuthorizationEndpoint: "",
 				TokenEndpoint:         "",
@@ -229,7 +228,7 @@ func TestParseAuthorizationCodeFlagsResult(t *testing.T) {
 				"--callback-uri", "http://localhost:8080/callback",
 			},
 			oidc.Config{
-				IssuerUrl:             "https://example.com",
+				IssuerURL:             "https://example.com",
 				DiscoveryEndpoint:     "",
 				AuthorizationEndpoint: "",
 				TokenEndpoint:         "",
@@ -270,7 +269,6 @@ func TestParseAuthorizationCodeFlagsResult(t *testing.T) {
 }
 
 func TestParseAuthorizationCodeFlagsError(t *testing.T) {
-
 	var tests = []struct {
 		name string
 		args []string

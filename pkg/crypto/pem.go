@@ -3,6 +3,7 @@ package crypto
 import (
 	"crypto/x509"
 	"encoding/pem"
+	"errors"
 	"fmt"
 	"os"
 )
@@ -15,7 +16,7 @@ func ReadPEMBlockFromFile(filePath string) (*pem.Block, error) {
 
 	block, _ := pem.Decode(data)
 	if block == nil {
-		return nil, fmt.Errorf("failed to decode PEM block")
+		return nil, errors.New("failed to decode PEM block")
 	}
 
 	return block, nil
@@ -23,7 +24,7 @@ func ReadPEMBlockFromFile(filePath string) (*pem.Block, error) {
 
 func ParsePublicKeyPEMBlock(block *pem.Block) (any, error) {
 	if block == nil {
-		return nil, fmt.Errorf("no PEM block provided")
+		return nil, errors.New("no PEM block provided")
 	}
 
 	key, err := x509.ParsePKIXPublicKey(block.Bytes)
@@ -36,7 +37,7 @@ func ParsePublicKeyPEMBlock(block *pem.Block) (any, error) {
 
 func ParsePrivateKeyPEMBlock(block *pem.Block) (any, error) {
 	if block == nil {
-		return nil, fmt.Errorf("no PEM block provided")
+		return nil, errors.New("no PEM block provided")
 	}
 
 	var key any

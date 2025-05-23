@@ -4,6 +4,7 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"github.com/jentz/vigilant-dollop/pkg/log"
 	"os"
 	"slices"
 
@@ -34,29 +35,28 @@ func usage() {
 Usage:
   oidc-cli [flags] <command> [command-flags]`
 
-	fmt.Fprintln(os.Stderr, intro)
-	fmt.Fprintln(os.Stderr, "\nCommands:")
+	log.ErrPrintln(intro)
+	log.ErrPrintln("\nCommands:")
 	for _, cmd := range commands {
-		fmt.Fprintf(os.Stderr, "  %-18s: %s\n", cmd.Name, cmd.Help)
+		log.ErrPrintf("  %-18s: %s\n", cmd.Name, cmd.Help)
 	}
 
-	fmt.Fprintln(os.Stderr, "\nFlags:")
+	log.ErrPrintln("\nFlags:")
 	// Prints a help string for each flag we defined earlier using
 	// flag.BoolVar (and related functions)
 	flag.PrintDefaults()
 
-	fmt.Fprintln(os.Stderr)
-	fmt.Fprintf(os.Stderr, "Run `oidc-cli <command> -h` to get help for a specific command\n\n")
+	log.ErrPrintln()
+	log.ErrPrintf("Run `oidc-cli <command> -h` to get help for a specific command\n\n")
 }
 
 func runCommand(name string, args []string, globalConf *oidc.Config) {
-
 	cmdIdx := slices.IndexFunc(commands, func(cmd Command) bool {
 		return cmd.Name == name
 	})
 
 	if cmdIdx < 0 {
-		fmt.Fprintf(os.Stderr, "command \"%s\" not found\n\n", name)
+		log.ErrPrintf("command \"%s\" not found\n\n", name)
 		flag.Usage()
 		os.Exit(1)
 	}
@@ -69,7 +69,7 @@ func runCommand(name string, args []string, globalConf *oidc.Config) {
 
 	command, output, err := cmd.Configure(name, args, globalConf)
 	if errors.Is(err, flag.ErrHelp) {
-		fmt.Fprintf(os.Stderr, "error: %v\n", output)
+		log.ErrPrintf("error: %v\n", output)
 		os.Exit(2)
 	} else if err != nil {
 		fmt.Println("got error:", err)
@@ -78,7 +78,7 @@ func runCommand(name string, args []string, globalConf *oidc.Config) {
 	}
 
 	if err := command.Run(); err != nil {
-		fmt.Fprintf(os.Stderr, "error: %v\n", err.Error())
+		log.ErrPrintf("error: %v\n", err.Error())
 		os.Exit(1)
 	}
 }

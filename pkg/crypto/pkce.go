@@ -7,12 +7,12 @@ import (
 	"math/big"
 )
 
-func RandomInt(min, max int) int {
-	nBig, err := rand.Int(rand.Reader, big.NewInt(int64(max-min)))
+func RandomInt(minVal int, maxVal int) int {
+	nBig, err := rand.Int(rand.Reader, big.NewInt(int64(maxVal-minVal)))
 	if err != nil {
 		panic(err)
 	}
-	return int(nBig.Int64()) + min
+	return int(nBig.Int64()) + minVal
 }
 
 func GeneratePKCECodeVerifier(n int) string {

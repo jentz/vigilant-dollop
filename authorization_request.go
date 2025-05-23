@@ -27,7 +27,6 @@ type AuthorizationRequest struct {
 }
 
 func (aReq *AuthorizationRequest) Execute(authEndpoint string, callback string, verbose bool, customArgs ...string) (aResp *AuthorizationResponse, err error) {
-
 	callbackEndpoint := &callbackEndpoint{}
 	callbackURL, err := url.Parse(callback)
 	if err != nil {
@@ -73,7 +72,6 @@ func (aReq *AuthorizationRequest) Execute(authEndpoint string, callback string, 
 		aResp = &AuthorizationResponse{}
 		aResp.Code = callbackEndpoint.code
 		return aResp, nil
-	} else {
-		return nil, fmt.Errorf("authorization failed with error %s and description %s", callbackEndpoint.errorMsg, callbackEndpoint.errorDescription)
 	}
+	return nil, fmt.Errorf("authorization failed with error %s and description %s", callbackEndpoint.errorMsg, callbackEndpoint.errorDescription)
 }

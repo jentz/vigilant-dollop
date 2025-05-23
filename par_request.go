@@ -2,10 +2,10 @@ package oidc
 
 import (
 	"encoding/json"
-	"fmt"
+	"errors"
+	"github.com/jentz/vigilant-dollop/pkg/log"
 	"net/http"
 	"net/url"
-	"os"
 	"strings"
 
 	"github.com/gorilla/schema"
@@ -29,10 +29,9 @@ type PushedAuthorizationRequest struct {
 }
 
 func (parReq *PushedAuthorizationRequest) Execute(pushedAuthEndpoint string, verbose bool, httpClient *http.Client, customArgs ...string) (parResp *PushedAuthorizationResponse, err error) {
-
 	_, err = url.Parse(parReq.RedirectURI)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "unable to parse redirect uri %s because %v\n", parReq.RedirectURI, err)
+		log.ErrPrintf("unable to parse redirect uri %s because %v\n", parReq.RedirectURI, err)
 		return nil, err
 	}
 
@@ -55,7 +54,7 @@ func (parReq *PushedAuthorizationRequest) Execute(pushedAuthEndpoint string, ver
 	}
 
 	if verbose {
-		fmt.Fprintf(os.Stderr, "pushed authorization endpoint: %s\n", pushedAuthEndpoint)
+		log.ErrPrintf("pushed authorization endpoint: %s\n", pushedAuthEndpoint)
 		maskedBody := url.Values{}
 		for k, v := range body {
 			if k == "client_secret" {
@@ -65,7 +64,7 @@ func (parReq *PushedAuthorizationRequest) Execute(pushedAuthEndpoint string, ver
 			}
 		}
 		if len(maskedBody) > 0 {
-			fmt.Fprintf(os.Stderr, "pushed authorization request body: %s\n", maskedBody.Encode())
+			log.ErrPrintf("pushed authorization request body: %s\n", maskedBody.Encode())
 		}
 	}
 
@@ -83,16 +82,22 @@ func (parReq *PushedAuthorizationRequest) Execute(pushedAuthEndpoint string, ver
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+
+	defer func() {
+		cerr := resp.Body.Close()
+		if err == nil && cerr != nil {
+			err = cerr
+		}
+	}()
 
 	if verbose {
-		fmt.Fprintf(os.Stderr, "pushed auth response status: %s\n", resp.Status)
+		log.ErrPrintf("pushed auth response status: %s\n", resp.Status)
 	}
 
 	dec := json.NewDecoder(resp.Body)
 	err = dec.Decode(&parResp)
 	if err != nil {
-		return nil, fmt.Errorf("error while parsing pushed authorization response")
+		return nil, errors.New("error while parsing pushed authorization response")
 	}
 
 	return parResp, nil

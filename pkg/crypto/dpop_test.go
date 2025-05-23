@@ -1,5 +1,6 @@
 package crypto
 
+//nolint:staticcheck // SA1019: crypto/dsa is used for test coverage of legacy/unsupported key types
 import (
 	"crypto/dsa"
 	"crypto/ecdsa"
@@ -35,7 +36,7 @@ func TestNewDPoPProofBuilder(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			dpopProofBuilder := NewDPoPProofBuilder().PrivateKey(tt.privateKey).PublicKey(tt.publicKey).Method(tt.method).Url(tt.url)
+			dpopProofBuilder := NewDPoPProofBuilder().PrivateKey(tt.privateKey).PublicKey(tt.publicKey).Method(tt.method).URL(tt.url)
 			if dpopProofBuilder == nil {
 				t.Errorf("NewDPoPProofBuilder() = %v, want %v", dpopProofBuilder, "not nil")
 			}
@@ -49,7 +50,7 @@ func TestNewDPoPProofBuilder(t *testing.T) {
 				t.Errorf("NewDPoPProofBuilder().Method() = %v, want %v", dpopProofBuilder.method, tt.method)
 			}
 			if dpopProofBuilder.url != tt.url {
-				t.Errorf("NewDPoPProofBuilder().Url() = %v, want %v", dpopProofBuilder.url, tt.url)
+				t.Errorf("NewDPoPProofBuilder().URL() = %v, want %v", dpopProofBuilder.url, tt.url)
 			}
 		})
 	}
@@ -98,7 +99,7 @@ func TestNewDPoPProofBuilderError(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			dpopProofBuilder := NewDPoPProofBuilder().PrivateKey(tt.privateKey).PublicKey(tt.publicKey).Method(tt.method).Url(tt.url)
+			dpopProofBuilder := NewDPoPProofBuilder().PrivateKey(tt.privateKey).PublicKey(tt.publicKey).Method(tt.method).URL(tt.url)
 			if len(dpopProofBuilder.errs) < 1 {
 				t.Errorf("NewDPoPProofBuilder() = %v, want %v", dpopProofBuilder.errs, "not empty")
 			}
@@ -253,7 +254,10 @@ func TestConstructJWT(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			tt.dpopProofBuilder.generateJTI()
+			err := tt.dpopProofBuilder.generateJTI()
+			if err != nil {
+				t.Errorf("generateJTI() error = %v, wantErr %v", err, nil)
+			}
 			tt.dpopProofBuilder.constructJWT()
 			got := tt.dpopProofBuilder.token
 			if got == nil {
@@ -313,9 +317,12 @@ func TestSignJWT(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			tt.dpopProofBuilder.generateJTI()
+			err := tt.dpopProofBuilder.generateJTI()
+			if err != nil {
+				t.Errorf("generateJTI() error = %v, wantErr %v", err, nil)
+			}
 			tt.dpopProofBuilder.constructJWT()
-			err := tt.dpopProofBuilder.signJWT()
+			err = tt.dpopProofBuilder.signJWT()
 			if err != nil {
 				t.Errorf("signJWT() error = %v, wantErr %v", err, nil)
 			}
@@ -327,7 +334,6 @@ func TestSignJWT(t *testing.T) {
 }
 
 func TestEcdsaAlgorithmString(t *testing.T) {
-
 	privateKey256, _ := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
 	publicKey256 := &privateKey256.PublicKey
 
@@ -370,7 +376,6 @@ func TestEcdsaAlgorithmString(t *testing.T) {
 }
 
 func TestRsaAlgorithmString(t *testing.T) {
-
 	privateKey256, _ := rsa.GenerateKey(rand.Reader, 2048)
 	publicKey256 := &privateKey256.PublicKey
 

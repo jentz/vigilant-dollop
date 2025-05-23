@@ -14,7 +14,7 @@ func parseGlobalFlags(name string, args []string) (oidcConf *oidc.Config, remain
 	var buf bytes.Buffer
 	flags.SetOutput(&buf)
 
-	flags.StringVar(&oidcConf.IssuerUrl, "issuer", "", "set issuer url")
+	flags.StringVar(&oidcConf.IssuerURL, "issuer", "", "set issuer url")
 	flags.StringVar(&oidcConf.DiscoveryEndpoint, "discovery-url", "", "override discovery url")
 	flags.StringVar(&oidcConf.ClientID, "client-id", "", "set client ID")
 	flags.StringVar(&oidcConf.ClientSecret, "client-secret", "", "set client secret")

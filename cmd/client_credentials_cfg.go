@@ -12,7 +12,7 @@ func parseClientCredentialsFlags(name string, args []string, oidcConf *oidc.Conf
 	var buf bytes.Buffer
 	flags.SetOutput(&buf)
 
-	flags.StringVar(&oidcConf.IssuerUrl, "issuer", oidcConf.IssuerUrl, "set issuer url (required)")
+	flags.StringVar(&oidcConf.IssuerURL, "issuer", oidcConf.IssuerURL, "set issuer url (required)")
 	flags.StringVar(&oidcConf.DiscoveryEndpoint, "discovery-url", oidcConf.DiscoveryEndpoint, "override discovery url")
 	flags.StringVar(&oidcConf.TokenEndpoint, "token-url", "", "override token url")
 	flags.StringVar(&oidcConf.ClientID, "client-id", oidcConf.ClientID, "set client ID (required)")
@@ -37,7 +37,7 @@ func parseClientCredentialsFlags(name string, args []string, oidcConf *oidc.Conf
 		message   string
 	}{
 		{
-			oidcConf.IssuerUrl == "",
+			oidcConf.IssuerURL == "",
 			"issuer is required",
 		},
 		{
