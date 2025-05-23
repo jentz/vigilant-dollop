@@ -3,7 +3,6 @@ package main
 import (
 	"errors"
 	"flag"
-	"fmt"
 	"github.com/jentz/vigilant-dollop/pkg/log"
 	"os"
 	"slices"
@@ -72,8 +71,8 @@ func runCommand(name string, args []string, globalConf *oidc.Config) {
 		log.ErrPrintf("error: %v\n", output)
 		os.Exit(2)
 	} else if err != nil {
-		fmt.Println("got error:", err)
-		fmt.Println("output:\n", output)
+		log.ErrPrintln("got error:", err)
+		log.ErrPrintln("output:\n", output)
 		os.Exit(1)
 	}
 
@@ -88,11 +87,11 @@ func main() {
 
 	globalConf, args, output, err := parseGlobalFlags("global flags", os.Args[1:])
 	if errors.Is(err, flag.ErrHelp) {
-		fmt.Println(output)
+		log.ErrPrintln(output)
 		os.Exit(2)
 	} else if err != nil {
-		fmt.Println("got error:", err)
-		fmt.Println("output:\n", output)
+		log.ErrPrintln("got error:", err)
+		log.ErrPrintln("output:\n", output)
 		os.Exit(1)
 	}
 

@@ -2,8 +2,8 @@ package oidc
 
 import (
 	"fmt"
+	"github.com/jentz/vigilant-dollop/pkg/log"
 	"net/url"
-	"os"
 	"strings"
 
 	"github.com/gorilla/schema"
@@ -30,7 +30,7 @@ func (aReq *AuthorizationRequest) Execute(authEndpoint string, callback string, 
 	callbackEndpoint := &callbackEndpoint{}
 	callbackURL, err := url.Parse(callback)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "unable to parse redirect uri %s because %v\n", aReq.RedirectURI, err)
+		log.ErrPrintf("unable to parse redirect uri %s because %v\n", aReq.RedirectURI, err)
 		return nil, err
 	}
 	callbackEndpoint.start(callbackURL.Host, callbackURL.Path, verbose)
@@ -57,12 +57,12 @@ func (aReq *AuthorizationRequest) Execute(authEndpoint string, callback string, 
 	requestURL := authURL.String()
 
 	if verbose {
-		fmt.Fprintf(os.Stderr, "authorization request: %s\n", requestURL)
+		log.ErrPrintf("authorization request: %s\n", requestURL)
 	}
 
 	err = browser.OpenURL(requestURL)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "unable to open browser because %v, visit %s to continue\n", err, requestURL)
+		log.ErrPrintf("unable to open browser because %v, visit %s to continue\n", err, requestURL)
 	}
 
 	<-callbackEndpoint.shutdownSignal
