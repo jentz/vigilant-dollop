@@ -1,7 +1,9 @@
 package oidc
 
 import (
+	"context"
 	"crypto/tls"
+	"fmt"
 	"github.com/jentz/vigilant-dollop/pkg/log"
 	"net/http"
 )
@@ -18,8 +20,11 @@ type IntrospectFlowConfig struct {
 	ResponseFormat string
 }
 
-func (c *IntrospectFlow) Run() error {
-	c.Config.DiscoverEndpoints()
+func (c *IntrospectFlow) Run(ctx context.Context) error {
+	err := c.Config.DiscoverEndpoints(ctx)
+	if err != nil {
+		return fmt.Errorf("endpoint discpvery failed: %w", err)
+	}
 
 	req := IntrospectionRequest{
 		ClientID:       c.Config.ClientID,

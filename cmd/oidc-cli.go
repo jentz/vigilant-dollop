@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"errors"
 	"flag"
 	"github.com/jentz/vigilant-dollop/pkg/log"
@@ -11,7 +12,7 @@ import (
 )
 
 type CommandRunner interface {
-	Run() error
+	Run(ctx context.Context) error
 }
 
 type Command struct {
@@ -76,7 +77,7 @@ func runCommand(name string, args []string, globalConf *oidc.Config) {
 		os.Exit(1)
 	}
 
-	if err := command.Run(); err != nil {
+	if err := command.Run(nil); err != nil {
 		log.ErrPrintf("error: %v\n", err.Error())
 		os.Exit(1)
 	}
