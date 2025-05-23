@@ -12,6 +12,7 @@ func ErrPrintf(format string, a ...interface{}) {
 	}
 }
 
+//nolint:forbidigo // allow fmt.Printf for controlled CLI output
 func Printf(format string, a ...interface{}) {
 	_, err := fmt.Printf(format, a...)
 	if err != nil {

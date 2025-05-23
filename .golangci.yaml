@@ -7,7 +7,7 @@ linters:
     - bodyclose
     - copyloopvar
     - depguard
-    #- forbidigo
+    - forbidigo
     - misspell
     #- noctx
     - nolintlint

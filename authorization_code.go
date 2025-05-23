@@ -2,7 +2,7 @@ package oidc
 
 import (
 	"crypto/tls"
-	"fmt"
+	"github.com/jentz/vigilant-dollop/pkg/log"
 	"net/http"
 
 	"github.com/jentz/vigilant-dollop/pkg/crypto"
@@ -131,6 +131,6 @@ func (c *AuthorizationCodeFlow) Run() error {
 		return err
 	}
 
-	fmt.Println(jsonStr)
+	log.Printf(jsonStr + "\n")
 	return nil
 }
