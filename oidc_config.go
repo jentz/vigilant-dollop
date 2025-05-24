@@ -32,6 +32,22 @@ func (a AuthMethodValue) IsValid() bool {
 	return a == AuthMethodClientSecretBasic || a == AuthMethodClientSecretPost
 }
 
+func SupportedIntrospectionResponseFormats() []string {
+	// supported formats are:
+	// json - default format per RFC 7662
+	// jwt - defined in RFC 7519
+	// token-introspection+jwt - defined in RFC 9701
+	return []string{"json", "jwt", "token-introspection+jwt"}
+}
+
+func SupportedIntrospectionTokenTypeHints() []string {
+	return []string{"access_token", "refresh_token"}
+}
+
+func SupportedIntrospectionAuthMethods() []AuthMethodValue {
+	return []AuthMethodValue{AuthMethodClientSecretBasic, AuthMethodClientSecretPost}
+}
+
 type Config struct {
 	ClientID                           string
 	ClientSecret                       string
@@ -52,6 +68,15 @@ func assignIfEmpty[T any](a *T, b T) {
 	if reflect.ValueOf(*a).IsZero() {
 		*a = b
 	}
+}
+
+func contains[T comparable](slice []T, value T) bool {
+	for _, v := range slice {
+		if v == value {
+			return true
+		}
+	}
+	return false
 }
 
 func (c *Config) DiscoverEndpoints() {

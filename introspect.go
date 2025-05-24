@@ -3,7 +3,10 @@ package oidc
 import (
 	"crypto/tls"
 	"fmt"
+	"io"
 	"net/http"
+	"net/url"
+	"os"
 )
 
 type IntrospectFlow struct {
@@ -21,14 +24,44 @@ type IntrospectFlowConfig struct {
 func (c *IntrospectFlow) Run() error {
 	c.Config.DiscoverEndpoints()
 
-	req := IntrospectionRequest{
-		ClientID:       c.Config.ClientID,
-		ClientSecret:   c.Config.ClientSecret,
-		Token:          c.FlowConfig.Token,
-		TokenTypeHint:  c.FlowConfig.TokenTypeHint,
-		BearerToken:    c.FlowConfig.BearerToken,
-		ResponseFormat: c.FlowConfig.ResponseFormat,
-		AuthMethod:     c.Config.AuthMethod,
+	req, err := NewIntrospectionRequestBuilder().
+		SetClientID(c.Config.ClientID).
+		SetClientSecret(c.Config.ClientSecret).
+		SetToken(c.FlowConfig.Token).
+		SetTokenTypeHint(c.FlowConfig.TokenTypeHint).
+		SetBearerToken(c.FlowConfig.BearerToken).
+		SetResponseFormat(c.FlowConfig.ResponseFormat).
+		SetAuthMethod(c.Config.AuthMethod).
+		SetEndpoint(c.Config.IntrospectionEndpoint).
+		Build()
+
+	if err != nil {
+		return err
+	}
+
+	if c.Config.Verbose {
+		fmt.Fprintf(os.Stderr, "introspection endpoint: %s\n", c.Config.IntrospectionEndpoint)
+		bodyBytes, err := io.ReadAll(req.Body)
+		if err != nil {
+			return fmt.Errorf("failed to read request body: %w", err)
+		}
+		req.Body.Close()
+
+		bodyValues, err := url.ParseQuery(string(bodyBytes))
+		if err != nil {
+			return fmt.Errorf("failed to parse request body: %w", err)
+		}
+
+		for k, v := range bodyValues {
+			if k == "client_secret" {
+				bodyValues.Set(k, "*****")
+			} else {
+				bodyValues[k] = v
+			}
+		}
+		if len(bodyValues) > 0 {
+			fmt.Fprintf(os.Stderr, "introspection request body: %s\n", bodyValues.Encode())
+		}
 	}
 
 	client := &http.Client{
@@ -39,9 +72,10 @@ func (c *IntrospectFlow) Run() error {
 		},
 	}
 
-	resp, err := req.Execute(c.Config.IntrospectionEndpoint, c.Config.Verbose, client)
+	resp := new(IntrospectionResponse)
+	err = httpRequest(client, req, &resp)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to execute introspection request: %w", err)
 	}
 
 	jsonStr, err := resp.JSON()
