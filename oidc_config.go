@@ -85,15 +85,6 @@ func contains[T comparable](slice []T, value T) bool {
 	return false
 }
 
-func contains[T comparable](slice []T, value T) bool {
-	for _, v := range slice {
-		if v == value {
-			return true
-		}
-	}
-	return false
-}
-
 func (c *Config) newHTTPClient() *http.Client {
 	return &http.Client{
 		Transport: &http.Transport{

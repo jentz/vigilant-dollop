@@ -4,9 +4,9 @@ import (
 	"context"
 	"crypto/tls"
 	"fmt"
-	"github.com/jentz/vigilant-dollop/pkg/log"
 	"net/http"
-	"os"
+
+	"github.com/jentz/vigilant-dollop/pkg/log"
 )
 
 type IntrospectFlow struct {
@@ -39,13 +39,13 @@ func (c *IntrospectFlow) Run(ctx context.Context) error {
 			WithAuthMethod(c.Config.AuthMethod)
 	}
 
-	req, err := iReq.ToHttpRequest()
+	req, err := iReq.ToHTTPRequest()
 	if err != nil {
 		return err
 	}
 
 	if c.Config.Verbose {
-		fmt.Fprintf(os.Stderr, "introspection endpoint: %s\n", c.Config.IntrospectionEndpoint)
+		log.ErrPrintf("introspection endpoint: %s\n", c.Config.IntrospectionEndpoint)
 
 		payload, err := iReq.MaskedPayload()
 		if err != nil {
@@ -53,7 +53,7 @@ func (c *IntrospectFlow) Run(ctx context.Context) error {
 		}
 
 		if len(payload) > 0 {
-			fmt.Fprintf(os.Stderr, "introspection request body: %s\n", payload.Encode())
+			log.ErrPrintf("introspection request body: %s\n", payload.Encode())
 		}
 	}
 

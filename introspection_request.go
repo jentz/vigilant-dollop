@@ -26,7 +26,6 @@ type IntrospectionRequest struct {
 	// clientID, clientSecret, and bearerToken are used for authentication
 	clientID     string
 	clientSecret string
-	bearerToken  string
 
 	// authMethod specifies the authentication method to use for the request
 	authMethod AuthMethodValue
@@ -76,7 +75,7 @@ func (b *IntrospectionRequest) WithResponseFormat(responseFormat string) *Intros
 
 func (b *IntrospectionRequest) WithBearerToken(bearerToken string) *IntrospectionRequest {
 	// bearerToken is used for authentication, takes precedence over client credentials
-	b.Header.Set("Authorization", "Bearer "+b.bearerToken)
+	b.Header.Set("Authorization", "Bearer "+bearerToken)
 	return b
 }
 
@@ -104,7 +103,7 @@ func (b *IntrospectionRequest) WithAuthMethod(authMethod AuthMethodValue) *Intro
 	return b
 }
 
-func (b *IntrospectionRequest) ToHttpRequest() (req *http.Request, err error) {
+func (b *IntrospectionRequest) ToHTTPRequest() (req *http.Request, err error) {
 	ctx := context.Background()
 
 	if len(b.errs) > 0 {
