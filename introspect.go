@@ -3,9 +3,7 @@ package oidc
 import (
 	"crypto/tls"
 	"fmt"
-	"io"
 	"net/http"
-	"net/url"
 	"os"
 )
 
@@ -24,43 +22,33 @@ type IntrospectFlowConfig struct {
 func (c *IntrospectFlow) Run() error {
 	c.Config.DiscoverEndpoints()
 
-	req, err := NewIntrospectionRequestBuilder().
-		SetClientID(c.Config.ClientID).
-		SetClientSecret(c.Config.ClientSecret).
-		SetToken(c.FlowConfig.Token).
-		SetTokenTypeHint(c.FlowConfig.TokenTypeHint).
-		SetBearerToken(c.FlowConfig.BearerToken).
-		SetResponseFormat(c.FlowConfig.ResponseFormat).
-		SetAuthMethod(c.Config.AuthMethod).
-		SetEndpoint(c.Config.IntrospectionEndpoint).
-		Build()
+	iReq := NewIntrospectionRequest(c.FlowConfig.Token, c.Config.IntrospectionEndpoint).
+		WithTokenTypeHint(c.FlowConfig.TokenTypeHint).
+		WithResponseFormat(c.FlowConfig.ResponseFormat)
 
+	if c.FlowConfig.BearerToken != "" {
+		iReq = iReq.WithBearerToken(c.FlowConfig.BearerToken)
+	} else {
+		iReq = iReq.
+			WithCredentials(c.Config.ClientID, c.Config.ClientSecret).
+			WithAuthMethod(c.Config.AuthMethod)
+	}
+
+	req, err := iReq.ToHttpRequest()
 	if err != nil {
 		return err
 	}
 
 	if c.Config.Verbose {
 		fmt.Fprintf(os.Stderr, "introspection endpoint: %s\n", c.Config.IntrospectionEndpoint)
-		bodyBytes, err := io.ReadAll(req.Body)
-		if err != nil {
-			return fmt.Errorf("failed to read request body: %w", err)
-		}
-		req.Body.Close()
 
-		bodyValues, err := url.ParseQuery(string(bodyBytes))
+		payload, err := iReq.MaskedPayload()
 		if err != nil {
-			return fmt.Errorf("failed to parse request body: %w", err)
+			return err
 		}
 
-		for k, v := range bodyValues {
-			if k == "client_secret" {
-				bodyValues.Set(k, "*****")
-			} else {
-				bodyValues[k] = v
-			}
-		}
-		if len(bodyValues) > 0 {
-			fmt.Fprintf(os.Stderr, "introspection request body: %s\n", bodyValues.Encode())
+		if len(payload) > 0 {
+			fmt.Fprintf(os.Stderr, "introspection request body: %s\n", payload.Encode())
 		}
 	}
 

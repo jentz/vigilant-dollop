@@ -30,7 +30,17 @@ func httpRequest(client *http.Client, req *http.Request, response any) error {
 
 	err = json.Unmarshal(body, response)
 	if err != nil {
+		if req.Header.Get("Accept") != "application/json" {
+			// assume the response is a plain JWT or other non-JSON format
+			body, err := io.ReadAll(resp.Body)
+			if err != nil {
+				return fmt.Errorf("failed to read response body: %v", err)
+			}
+			response = body
+			return nil
+		}
 		return fmt.Errorf("failed to unmarshal response: %v %s", err, body)
 	}
+
 	return nil
 }
