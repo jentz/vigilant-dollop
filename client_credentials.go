@@ -1,9 +1,9 @@
 package oidc
 
 import (
-	"crypto/tls"
+	"context"
 	"fmt"
-	"net/http"
+	"github.com/jentz/vigilant-dollop/pkg/log"
 )
 
 type ClientCredentialsFlow struct {
@@ -15,8 +15,11 @@ type ClientCredentialsFlowConfig struct {
 	Scopes string
 }
 
-func (c *ClientCredentialsFlow) Run() error {
-	c.Config.DiscoverEndpoints()
+func (c *ClientCredentialsFlow) Run(ctx context.Context) error {
+	err := c.Config.DiscoverEndpoints(ctx)
+	if err != nil {
+		return fmt.Errorf("endpoint discovery failed: %w", err)
+	}
 
 	req := TokenRequest{
 		GrantType:    "client_credentials",
@@ -29,13 +32,7 @@ func (c *ClientCredentialsFlow) Run() error {
 		req.Scope = c.FlowConfig.Scopes
 	}
 
-	client := &http.Client{
-		Transport: &http.Transport{
-			TLSClientConfig: &tls.Config{
-				InsecureSkipVerify: c.Config.SkipTLSVerify,
-			},
-		},
-	}
+	client := c.Config.newHTTPClient()
 
 	resp, err := req.Execute(c.Config.TokenEndpoint, c.Config.Verbose, client)
 	if err != nil {
@@ -46,6 +43,6 @@ func (c *ClientCredentialsFlow) Run() error {
 	if err != nil {
 		return err
 	}
-	fmt.Println(jsonStr)
+	log.Printf(jsonStr + "\n")
 	return nil
 }

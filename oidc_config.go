@@ -4,9 +4,10 @@ import (
 	"context"
 	"crypto/tls"
 	"fmt"
-	"log"
 	"net/http"
-	"reflect"
+	"time"
+
+	"github.com/jentz/vigilant-dollop/pkg/crypto"
 )
 
 type AuthMethodValue string
@@ -16,11 +17,18 @@ const (
 	AuthMethodClientSecretPost  AuthMethodValue = "client_secret_post"
 )
 
+var validAuthMethods = map[AuthMethodValue]bool{
+	AuthMethodClientSecretBasic: true,
+	AuthMethodClientSecretPost:  true,
+}
+
 func (a *AuthMethodValue) Set(value string) error {
-	if !AuthMethodValue(value).IsValid() {
-		return fmt.Errorf("invalid auth method, valid values are %s", []AuthMethodValue{AuthMethodClientSecretBasic, AuthMethodClientSecretPost})
+	methodValue := AuthMethodValue(value)
+	if !methodValue.IsValid() {
+		return fmt.Errorf("invalid auth method %q, valid values are: %s, %s",
+			value, AuthMethodClientSecretBasic, AuthMethodClientSecretPost)
 	}
-	*a = AuthMethodValue(value)
+	*a = methodValue
 	return nil
 }
 
@@ -28,8 +36,8 @@ func (a *AuthMethodValue) String() string {
 	return string(*a)
 }
 
-func (a AuthMethodValue) IsValid() bool {
-	return a == AuthMethodClientSecretBasic || a == AuthMethodClientSecretPost
+func (a *AuthMethodValue) IsValid() bool {
+	return validAuthMethods[*a]
 }
 
 func SupportedIntrospectionResponseFormats() []string {
@@ -51,7 +59,7 @@ func SupportedIntrospectionAuthMethods() []AuthMethodValue {
 type Config struct {
 	ClientID                           string
 	ClientSecret                       string
-	IssuerUrl                          string
+	IssuerURL                          string
 	DiscoveryEndpoint                  string
 	AuthorizationEndpoint              string
 	PushedAuthorizationRequestEndpoint string
@@ -62,12 +70,10 @@ type Config struct {
 	SkipTLSVerify                      bool
 	Verbose                            bool
 	AuthMethod                         AuthMethodValue
-}
-
-func assignIfEmpty[T any](a *T, b T) {
-	if reflect.ValueOf(*a).IsZero() {
-		*a = b
-	}
+	PrivateKeyFile                     string
+	PublicKeyFile                      string
+	PrivateKey                         any
+	PublicKey                          any
 }
 
 func contains[T comparable](slice []T, value T) bool {
@@ -79,35 +85,102 @@ func contains[T comparable](slice []T, value T) bool {
 	return false
 }
 
-func (c *Config) DiscoverEndpoints() {
-	ctx := context.Background()
-	client := &http.Client{
+func contains[T comparable](slice []T, value T) bool {
+	for _, v := range slice {
+		if v == value {
+			return true
+		}
+	}
+	return false
+}
+
+func (c *Config) newHTTPClient() *http.Client {
+	return &http.Client{
 		Transport: &http.Transport{
 			TLSClientConfig: &tls.Config{
 				InsecureSkipVerify: c.SkipTLSVerify,
 			},
 		},
+		Timeout: 10 * time.Second,
 	}
-	discoveryConfig, err := discover(ctx, c.IssuerUrl, client, c.DiscoveryEndpoint)
+}
 
+func (c *Config) DiscoverEndpoints(ctx context.Context) error {
+	if ctx == nil {
+		ctx = context.Background()
+	}
+
+	client := c.newHTTPClient()
+
+	discoveryConfig, err := discover(ctx, c.IssuerURL, client, c.DiscoveryEndpoint)
 	if err != nil {
-		log.Fatal(err)
+		return fmt.Errorf("endpoint discovery failed: %w", err)
 	}
 
-	assignIfEmpty(&c.AuthorizationEndpoint, discoveryConfig.AuthorizationEndpoint)
-	assignIfEmpty(&c.PushedAuthorizationRequestEndpoint, discoveryConfig.PushedAuthorizationRequestEndpoint)
-	assignIfEmpty(&c.TokenEndpoint, discoveryConfig.TokenEndpoint)
-	assignIfEmpty(&c.IntrospectionEndpoint, discoveryConfig.IntrospectionEndpoint)
-	assignIfEmpty(&c.UserinfoEndpoint, discoveryConfig.UserinfoEndpoint)
-	assignIfEmpty(&c.JWKSEndpoint, discoveryConfig.JwksURI)
+	// Set endpoints from discovery config if not already set by user
+	if c.AuthorizationEndpoint == "" {
+		c.AuthorizationEndpoint = discoveryConfig.AuthorizationEndpoint
+	}
 
-	// use first supported auth method unless set through flag
-	for _, method := range discoveryConfig.TokenEndpointAuthMethods {
-		if AuthMethodValue(method).IsValid() {
-			assignIfEmpty(&c.AuthMethod, AuthMethodValue(method))
-			break
+	if c.PushedAuthorizationRequestEndpoint == "" {
+		c.PushedAuthorizationRequestEndpoint = discoveryConfig.PushedAuthorizationRequestEndpoint
+	}
+
+	if c.TokenEndpoint == "" {
+		c.TokenEndpoint = discoveryConfig.TokenEndpoint
+	}
+
+	if c.IntrospectionEndpoint == "" {
+		c.IntrospectionEndpoint = discoveryConfig.IntrospectionEndpoint
+	}
+
+	if c.UserinfoEndpoint == "" {
+		c.UserinfoEndpoint = discoveryConfig.UserinfoEndpoint
+	}
+
+	if c.JWKSEndpoint == "" {
+		c.JWKSEndpoint = discoveryConfig.JwksURI
+	}
+
+	// set default auth method if not set by user
+	if c.AuthMethod == "" {
+		for _, method := range discoveryConfig.TokenEndpointAuthMethods {
+			authMethodValue := AuthMethodValue(method)
+			if authMethodValue.IsValid() {
+				c.AuthMethod = authMethodValue
+				break
+			}
 		}
 	}
+
+	return nil
+}
+
+func (c *Config) ReadKeyFiles() error {
+	// Parse the private key if provided
+	if c.PrivateKeyFile != "" {
+		pem, err := crypto.ReadPEMBlockFromFile(c.PrivateKeyFile)
+		if err != nil {
+			return fmt.Errorf("could not read private key file: %w", err)
+		}
+		c.PrivateKey, err = crypto.ParsePrivateKeyPEMBlock(pem)
+		if err != nil {
+			return fmt.Errorf("could not parse private key: %w", err)
+		}
+	}
+
+	// Parse the public key if provided
+	if c.PublicKeyFile != "" {
+		pem, err := crypto.ReadPEMBlockFromFile(c.PublicKeyFile)
+		if err != nil {
+			return fmt.Errorf("failed to read public key file: %v", err)
+		}
+		c.PublicKey, err = crypto.ParsePublicKeyPEMBlock(pem)
+		if err != nil {
+			return fmt.Errorf("failed to parse public key: %v", err)
+		}
+	}
+	return nil
 }
 
 type CustomArgs []string

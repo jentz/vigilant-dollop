@@ -13,7 +13,7 @@ type Error struct {
 }
 
 func (e Error) Error() string {
-	message := "ErrorType=" + string(e.ErrorType)
+	message := "ErrorType=" + e.ErrorType
 	if e.Description != "" {
 		message += " Description=" + e.Description
 	}

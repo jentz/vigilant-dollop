@@ -8,7 +8,6 @@ import (
 )
 
 func TestParseGlobalFlagsResult(t *testing.T) {
-
 	var tests = []struct {
 		name          string
 		args          []string
@@ -25,7 +24,7 @@ func TestParseGlobalFlagsResult(t *testing.T) {
 				"--client-secret", "client-secret",
 			},
 			oidc.Config{
-				IssuerUrl:         "https://example.com",
+				IssuerURL:         "https://example.com",
 				DiscoveryEndpoint: "https://example.com/.well-known/openid-configuration",
 				ClientID:          "client-id",
 				ClientSecret:      "client-secret",
@@ -42,7 +41,7 @@ func TestParseGlobalFlagsResult(t *testing.T) {
 				"--client-secret", "client-secret",
 			},
 			oidc.Config{
-				IssuerUrl:         "https://example.com",
+				IssuerURL:         "https://example.com",
 				DiscoveryEndpoint: "",
 				ClientID:          "client-id",
 				ClientSecret:      "client-secret",
@@ -59,7 +58,7 @@ func TestParseGlobalFlagsResult(t *testing.T) {
 				"--verbose",
 			},
 			oidc.Config{
-				IssuerUrl:         "https://example.com",
+				IssuerURL:         "https://example.com",
 				DiscoveryEndpoint: "",
 				ClientID:          "client-id",
 				ClientSecret:      "client-secret",
@@ -77,7 +76,7 @@ func TestParseGlobalFlagsResult(t *testing.T) {
 				"--skip-tls-verify",
 			},
 			oidc.Config{
-				IssuerUrl:         "https://example.com",
+				IssuerURL:         "https://example.com",
 				DiscoveryEndpoint: "",
 				ClientID:          "client-id",
 				ClientSecret:      "client-secret",

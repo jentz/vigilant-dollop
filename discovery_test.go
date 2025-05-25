@@ -29,7 +29,7 @@ func TestDiscover(t *testing.T) {
 		ctx          context.Context
 		issuer       string
 		httpClient   *http.Client
-		wellKnownUrl []string
+		wellKnownURL string
 	}
 	type httpRes struct {
 		body       string
@@ -84,7 +84,7 @@ func TestDiscover(t *testing.T) {
 				ctx:          context.Background(),
 				issuer:       "https://example.com",
 				httpClient:   http.DefaultClient,
-				wellKnownUrl: []string{"https://example.com/.well-known/override"},
+				wellKnownURL: "https://example.com/.well-known/override",
 			},
 			httpRes: httpRes{
 				body:       defaultBody,
@@ -125,7 +125,7 @@ func TestDiscover(t *testing.T) {
 					Body:       io.NopCloser(bytes.NewBufferString(tt.httpRes.body)),
 				}, nil
 			})
-			got, err := discover(tt.args.ctx, tt.args.issuer, tt.args.httpClient, tt.args.wellKnownUrl...)
+			got, err := discover(tt.args.ctx, tt.args.issuer, tt.args.httpClient, tt.args.wellKnownURL)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("discover() error = %v, wantErr %v", err, tt.wantErr)
 				return

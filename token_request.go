@@ -2,10 +2,10 @@ package oidc
 
 import (
 	"encoding/json"
-	"fmt"
+	"errors"
+	"github.com/jentz/vigilant-dollop/pkg/log"
 	"net/http"
 	"net/url"
-	"os"
 	"strings"
 
 	"github.com/gorilla/schema"
@@ -21,6 +21,7 @@ type TokenRequest struct {
 	ClientSecret string          `schema:"client_secret,omitempty"`
 	RefreshToken string          `schema:"refresh_token,omitempty"`
 	AuthMethod   AuthMethodValue `schema:"-"` // not part of the request
+	DPoPHeader   string          `schema:"-"` // not part of the request
 }
 
 func (tReq *TokenRequest) Execute(tokenEndpoint string, verbose bool, httpClient *http.Client) (tResp *TokenResponse, err error) {
@@ -37,7 +38,7 @@ func (tReq *TokenRequest) Execute(tokenEndpoint string, verbose bool, httpClient
 	}
 
 	if verbose {
-		fmt.Fprintf(os.Stderr, "token endpoint: %s\n", tokenEndpoint)
+		log.ErrPrintf("token endpoint: %s\n", tokenEndpoint)
 		maskedBody := url.Values{}
 		for k, v := range body {
 			if k == "client_secret" {
@@ -47,7 +48,7 @@ func (tReq *TokenRequest) Execute(tokenEndpoint string, verbose bool, httpClient
 			}
 		}
 		if len(maskedBody) > 0 {
-			fmt.Fprintf(os.Stderr, "token request body: %s\n", maskedBody.Encode())
+			log.ErrPrintf("token request body: %s\n", maskedBody.Encode())
 		}
 	}
 
@@ -57,6 +58,10 @@ func (tReq *TokenRequest) Execute(tokenEndpoint string, verbose bool, httpClient
 	}
 	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 
+	if tReq.DPoPHeader != "" {
+		req.Header.Add("DPoP", tReq.DPoPHeader)
+	}
+
 	if tReq.AuthMethod == AuthMethodClientSecretBasic {
 		req.SetBasicAuth(tReq.ClientID, tReq.ClientSecret)
 	}
@@ -65,16 +70,21 @@ func (tReq *TokenRequest) Execute(tokenEndpoint string, verbose bool, httpClient
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer func() {
+		cerr := resp.Body.Close()
+		if err == nil && cerr != nil {
+			err = cerr
+		}
+	}()
 
 	if verbose {
-		fmt.Fprintf(os.Stderr, "token response status: %s\n", resp.Status)
+		log.ErrPrintf("token response status: %s\n", resp.Status)
 	}
 
 	dec := json.NewDecoder(resp.Body)
 	err = dec.Decode(&tResp)
 	if err != nil {
-		return nil, fmt.Errorf("error while parsing token response")
+		return nil, errors.New("error while parsing token response")
 	}
 
 	return tResp, nil

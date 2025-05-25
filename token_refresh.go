@@ -1,8 +1,10 @@
 package oidc
 
 import (
+	"context"
 	"crypto/tls"
 	"fmt"
+	"github.com/jentz/vigilant-dollop/pkg/log"
 	"net/http"
 )
 
@@ -16,8 +18,11 @@ type TokenRefreshFlowConfig struct {
 	RefreshToken string
 }
 
-func (c *TokenRefreshFlow) Run() error {
-	c.Config.DiscoverEndpoints()
+func (c *TokenRefreshFlow) Run(ctx context.Context) error {
+	err := c.Config.DiscoverEndpoints(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to discover endpoints: %w", err)
+	}
 
 	req := TokenRequest{
 		GrantType:    "refresh_token",
@@ -45,6 +50,6 @@ func (c *TokenRefreshFlow) Run() error {
 	if err != nil {
 		return err
 	}
-	fmt.Println(jsonStr)
+	log.Printf(jsonStr + "\n")
 	return nil
 }

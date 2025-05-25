@@ -8,7 +8,6 @@ import (
 )
 
 func TestParseClientCredentialsFlagsResult(t *testing.T) {
-
 	var tests = []struct {
 		name     string
 		args     []string
@@ -25,7 +24,7 @@ func TestParseClientCredentialsFlagsResult(t *testing.T) {
 				"--client-secret", "client-secret",
 			},
 			oidc.Config{
-				IssuerUrl:         "https://example.com",
+				IssuerURL:         "https://example.com",
 				DiscoveryEndpoint: "https://example.com/.well-known/openid-configuration",
 				TokenEndpoint:     "https://example.com/token",
 				ClientID:          "client-id",
@@ -43,7 +42,7 @@ func TestParseClientCredentialsFlagsResult(t *testing.T) {
 				"--client-secret", "client-secret",
 			},
 			oidc.Config{
-				IssuerUrl:             "https://example.com",
+				IssuerURL:             "https://example.com",
 				DiscoveryEndpoint:     "",
 				AuthorizationEndpoint: "",
 				TokenEndpoint:         "",
@@ -63,7 +62,7 @@ func TestParseClientCredentialsFlagsResult(t *testing.T) {
 				"--scopes", "expected",
 			},
 			oidc.Config{
-				IssuerUrl:             "https://example.com",
+				IssuerURL:             "https://example.com",
 				DiscoveryEndpoint:     "",
 				AuthorizationEndpoint: "",
 				TokenEndpoint:         "",
@@ -100,7 +99,6 @@ func TestParseClientCredentialsFlagsResult(t *testing.T) {
 }
 
 func TestParseClientCredentialsFlagsError(t *testing.T) {
-
 	var tests = []struct {
 		name string
 		args []string

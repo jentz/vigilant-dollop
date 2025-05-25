@@ -12,7 +12,7 @@ func parseAuthorizationCodeFlags(name string, args []string, oidcConf *oidc.Conf
 	var buf bytes.Buffer
 	flags.SetOutput(&buf)
 
-	flags.StringVar(&oidcConf.IssuerUrl, "issuer", oidcConf.IssuerUrl, "set issuer url (required)")
+	flags.StringVar(&oidcConf.IssuerURL, "issuer", oidcConf.IssuerURL, "set issuer url (required)")
 	flags.StringVar(&oidcConf.DiscoveryEndpoint, "discovery-url", oidcConf.DiscoveryEndpoint, "override discovery url")
 	flags.StringVar(&oidcConf.AuthorizationEndpoint, "authorization-url", "", "override authorization url")
 	flags.StringVar(&oidcConf.TokenEndpoint, "token-url", "", "override token url")
@@ -20,6 +20,8 @@ func parseAuthorizationCodeFlags(name string, args []string, oidcConf *oidc.Conf
 	flags.StringVar(&oidcConf.ClientSecret, "client-secret", oidcConf.ClientSecret, "set client secret (required if not using PKCE)")
 	flags.BoolVar(&oidcConf.SkipTLSVerify, "skip-tls-verify", oidcConf.SkipTLSVerify, "skip TLS certificate verification")
 	flags.Var(&oidcConf.AuthMethod, "auth-method", "auth method to use (client_secret_basic or client_secret_post)")
+	flags.StringVar(&oidcConf.PrivateKeyFile, "private-key", "", "file to read private key from (eg. for DPoP)")
+	flags.StringVar(&oidcConf.PublicKeyFile, "public-key", "", "file to read public key from (eg. for DPoP)")
 
 	var flowConf oidc.AuthorizationCodeFlowConfig
 	flags.StringVar(&flowConf.Scopes, "scopes", "openid", "set scopes as a space separated list")
@@ -33,6 +35,7 @@ func parseAuthorizationCodeFlags(name string, args []string, oidcConf *oidc.Conf
 	flags.Var(&flowConf.CustomArgs, "custom", "custom authorization parameters, argument can be given multiple times")
 	flags.BoolVar(&flowConf.PKCE, "pkce", false, "use proof-key for code exchange (PKCE)")
 	flags.BoolVar(&flowConf.PAR, "par", false, "use pushed authorization requests")
+	flags.BoolVar(&flowConf.DPoP, "dpop", false, "use dpop-protected access tokens")
 
 	runner = &oidc.AuthorizationCodeFlow{
 		Config:     oidcConf,
@@ -49,7 +52,7 @@ func parseAuthorizationCodeFlags(name string, args []string, oidcConf *oidc.Conf
 		message   string
 	}{
 		{
-			oidcConf.IssuerUrl == "",
+			oidcConf.IssuerURL == "",
 			"issuer is required",
 		},
 		{
@@ -67,6 +70,10 @@ func parseAuthorizationCodeFlags(name string, args []string, oidcConf *oidc.Conf
 		{
 			flowConf.CallbackURI == "",
 			"callback-uri is required",
+		},
+		{
+			flowConf.DPoP && (oidcConf.PrivateKeyFile == "" || oidcConf.PublicKeyFile == ""),
+			"private-key and public-key are required when using DPoP",
 		},
 	}
 
