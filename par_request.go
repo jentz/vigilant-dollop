@@ -28,10 +28,10 @@ type PushedAuthorizationRequest struct {
 	AuthMethod          AuthMethodValue `schema:"-"` // not part of the request
 }
 
-func (parReq *PushedAuthorizationRequest) Execute(pushedAuthEndpoint string, verbose bool, httpClient *http.Client, customArgs ...string) (parResp *PushedAuthorizationResponse, err error) {
+func (parReq *PushedAuthorizationRequest) Execute(pushedAuthEndpoint string, httpClient *http.Client, customArgs ...string) (parResp *PushedAuthorizationResponse, err error) {
 	_, err = url.Parse(parReq.RedirectURI)
 	if err != nil {
-		log.ErrPrintf("unable to parse redirect uri %s because %v\n", parReq.RedirectURI, err)
+		log.Printf("unable to parse redirect uri %s because %v\n", parReq.RedirectURI, err)
 		return nil, err
 	}
 
@@ -53,19 +53,17 @@ func (parReq *PushedAuthorizationRequest) Execute(pushedAuthEndpoint string, ver
 		body.Del("client_secret")
 	}
 
-	if verbose {
-		log.ErrPrintf("pushed authorization endpoint: %s\n", pushedAuthEndpoint)
-		maskedBody := url.Values{}
-		for k, v := range body {
-			if k == "client_secret" {
-				maskedBody.Set(k, "*****")
-			} else {
-				maskedBody[k] = v
-			}
+	log.Printf("pushed authorization endpoint: %s\n", pushedAuthEndpoint)
+	maskedBody := url.Values{}
+	for k, v := range body {
+		if k == "client_secret" {
+			maskedBody.Set(k, "*****")
+		} else {
+			maskedBody[k] = v
 		}
-		if len(maskedBody) > 0 {
-			log.ErrPrintf("pushed authorization request body: %s\n", maskedBody.Encode())
-		}
+	}
+	if len(maskedBody) > 0 {
+		log.Printf("pushed authorization request body: %s\n", maskedBody.Encode())
 	}
 
 	req, err := http.NewRequest("POST", pushedAuthEndpoint, strings.NewReader(body.Encode()))
@@ -90,9 +88,7 @@ func (parReq *PushedAuthorizationRequest) Execute(pushedAuthEndpoint string, ver
 		}
 	}()
 
-	if verbose {
-		log.ErrPrintf("pushed auth response status: %s\n", resp.Status)
-	}
+	log.Printf("pushed auth response status: %s\n", resp.Status)
 
 	dec := json.NewDecoder(resp.Body)
 	err = dec.Decode(&parResp)

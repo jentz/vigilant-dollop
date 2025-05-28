@@ -44,7 +44,7 @@ func (c *IntrospectFlow) Run(ctx context.Context) error {
 		},
 	}
 
-	resp, err := req.Execute(c.Config.IntrospectionEndpoint, c.Config.Verbose, client)
+	resp, err := req.Execute(c.Config.IntrospectionEndpoint, client)
 	if err != nil {
 		return err
 	}
@@ -53,6 +53,6 @@ func (c *IntrospectFlow) Run(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	log.Printf(jsonStr + "\n")
+	log.Outputf(jsonStr + "\n")
 	return nil
 }

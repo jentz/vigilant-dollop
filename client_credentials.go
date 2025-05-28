@@ -34,7 +34,7 @@ func (c *ClientCredentialsFlow) Run(ctx context.Context) error {
 
 	client := c.Config.newHTTPClient()
 
-	resp, err := req.Execute(c.Config.TokenEndpoint, c.Config.Verbose, client)
+	resp, err := req.Execute(c.Config.TokenEndpoint, client)
 	if err != nil {
 		return err
 	}
@@ -43,6 +43,6 @@ func (c *ClientCredentialsFlow) Run(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	log.Printf(jsonStr + "\n")
+	log.Outputf(jsonStr + "\n")
 	return nil
 }

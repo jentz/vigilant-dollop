@@ -26,14 +26,14 @@ type AuthorizationRequest struct {
 	RequestURI          string `schema:"request_uri,omitempty"`
 }
 
-func (aReq *AuthorizationRequest) Execute(authEndpoint string, callback string, verbose bool, customArgs ...string) (aResp *AuthorizationResponse, err error) {
+func (aReq *AuthorizationRequest) Execute(authEndpoint string, callback string, customArgs ...string) (aResp *AuthorizationResponse, err error) {
 	callbackEndpoint := &callbackEndpoint{}
 	callbackURL, err := url.Parse(callback)
 	if err != nil {
-		log.ErrPrintf("unable to parse redirect uri %s because %v\n", aReq.RedirectURI, err)
+		log.Printf("unable to parse redirect uri %s because %v\n", aReq.RedirectURI, err)
 		return nil, err
 	}
-	callbackEndpoint.start(callbackURL.Host, callbackURL.Path, verbose)
+	callbackEndpoint.start(callbackURL.Host, callbackURL.Path)
 
 	authURL, err := url.Parse(authEndpoint)
 	if err != nil {
@@ -56,13 +56,11 @@ func (aReq *AuthorizationRequest) Execute(authEndpoint string, callback string, 
 	authURL.RawQuery = query.Encode()
 	requestURL := authURL.String()
 
-	if verbose {
-		log.ErrPrintf("authorization request: %s\n", requestURL)
-	}
+	log.Printf("authorization request: %s\n", requestURL)
 
 	err = browser.OpenURL(requestURL)
 	if err != nil {
-		log.ErrPrintf("unable to open browser because %v, visit %s to continue\n", err, requestURL)
+		log.Printf("unable to open browser because %v, visit %s to continue\n", err, requestURL)
 	}
 
 	<-callbackEndpoint.shutdownSignal

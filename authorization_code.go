@@ -73,7 +73,7 @@ func (c *AuthorizationCodeFlow) Run(ctx context.Context) error {
 			parReq.CodeChallenge = crypto.GeneratePKCECodeChallenge(codeVerifier)
 			parReq.CodeChallengeMethod = "S256"
 		}
-		parResp, err := parReq.Execute(c.Config.PushedAuthorizationRequestEndpoint, c.Config.Verbose, client, c.FlowConfig.CustomArgs...)
+		parResp, err := parReq.Execute(c.Config.PushedAuthorizationRequestEndpoint, client, c.FlowConfig.CustomArgs...)
 		if err != nil {
 			return err
 		}
@@ -103,7 +103,7 @@ func (c *AuthorizationCodeFlow) Run(ctx context.Context) error {
 		}
 	}
 
-	aResp, err := aReq.Execute(c.Config.AuthorizationEndpoint, c.FlowConfig.CallbackURI, c.Config.Verbose, c.FlowConfig.CustomArgs...)
+	aResp, err := aReq.Execute(c.Config.AuthorizationEndpoint, c.FlowConfig.CallbackURI, c.FlowConfig.CustomArgs...)
 	if err != nil {
 		return err
 	}
@@ -130,7 +130,7 @@ func (c *AuthorizationCodeFlow) Run(ctx context.Context) error {
 		tReq.DPoPHeader = dpopProof.String()
 	}
 
-	tResp, err := tReq.Execute(c.Config.TokenEndpoint, c.Config.Verbose, client)
+	tResp, err := tReq.Execute(c.Config.TokenEndpoint, client)
 	if err != nil {
 		return err
 	}
@@ -140,6 +140,6 @@ func (c *AuthorizationCodeFlow) Run(ctx context.Context) error {
 		return err
 	}
 
-	log.Printf(jsonStr + "\n")
+	log.Outputf(jsonStr + "\n")
 	return nil
 }
