@@ -29,29 +29,29 @@ func init() {
 		parts = append(parts, info.Main.Version)
 	}
 
-	var vcsInfo = vcsInfo{}
+	var vcs = vcsInfo{}
 	for _, kv := range info.Settings {
 		if kv.Value == "" {
 			continue
 		}
 		switch kv.Key {
 		case "vcs.revision":
-			vcsInfo.revision = kv.Value
+			vcs.revision = kv.Value
 		case "vcs.time":
-			vcsInfo.lastCommit, _ = time.Parse(time.RFC3339, kv.Value)
+			vcs.lastCommit, _ = time.Parse(time.RFC3339, kv.Value)
 		case "vcs.modified":
-			vcsInfo.dirty = kv.Value == "true"
+			vcs.dirty = kv.Value == "true"
 		}
 	}
 
-	if vcsInfo.revision != "" {
+	if vcs.revision != "" {
 		parts = append(parts, "rev")
-		commit := vcsInfo.revision
+		commit := vcs.revision
 		if len(commit) > 7 {
 			commit = commit[:7]
 		}
 		parts = append(parts, commit)
-		if vcsInfo.dirty {
+		if vcs.dirty {
 			parts = append(parts, "dirty")
 		}
 	}
