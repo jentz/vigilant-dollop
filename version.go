@@ -31,7 +31,7 @@ func init() {
 
 	var vcsInfo = vcsInfo{}
 	for _, kv := range info.Settings {
-		if kv.Value != "" {
+		if kv.Value == "" {
 			continue
 		}
 		switch kv.Key {
