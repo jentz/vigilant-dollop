@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"flag"
+	"github.com/jentz/vigilant-dollop/pkg/log"
 
 	oidc "github.com/jentz/vigilant-dollop"
 )
@@ -19,12 +20,15 @@ func parseGlobalFlags(name string, args []string) (oidcConf *oidc.Config, remain
 	flags.StringVar(&oidcConf.ClientID, "client-id", "", "set client ID")
 	flags.StringVar(&oidcConf.ClientSecret, "client-secret", "", "set client secret")
 	flags.BoolVar(&oidcConf.SkipTLSVerify, "skip-tls-verify", false, "skip TLS certificate verification")
-	flags.BoolVar(&oidcConf.Verbose, "verbose", false, "enable verbose output")
+	var verbose bool
+	flags.BoolVar(&verbose, "verbose", false, "enable verbose output")
 
 	err = flags.Parse(args)
 	if err != nil {
 		return nil, flags.Args(), buf.String(), err
 	}
+
+	log.SetDefaultLogger(log.WithVerbose(verbose))
 
 	return oidcConf, flags.Args(), buf.String(), nil
 }

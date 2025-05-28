@@ -41,7 +41,7 @@ func (c *TokenRefreshFlow) Run(ctx context.Context) error {
 		},
 	}
 
-	resp, err := req.Execute(c.Config.TokenEndpoint, c.Config.Verbose, client)
+	resp, err := req.Execute(c.Config.TokenEndpoint, client)
 	if err != nil {
 		return err
 	}
@@ -50,6 +50,6 @@ func (c *TokenRefreshFlow) Run(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	log.Printf(jsonStr + "\n")
+	log.Outputf(jsonStr + "\n")
 	return nil
 }

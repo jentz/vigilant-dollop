@@ -24,7 +24,7 @@ type TokenRequest struct {
 	DPoPHeader   string          `schema:"-"` // not part of the request
 }
 
-func (tReq *TokenRequest) Execute(tokenEndpoint string, verbose bool, httpClient *http.Client) (tResp *TokenResponse, err error) {
+func (tReq *TokenRequest) Execute(tokenEndpoint string, httpClient *http.Client) (tResp *TokenResponse, err error) {
 	encoder := schema.NewEncoder()
 	body := url.Values{}
 	err = encoder.Encode(tReq, body)
@@ -37,19 +37,17 @@ func (tReq *TokenRequest) Execute(tokenEndpoint string, verbose bool, httpClient
 		body.Del("client_secret")
 	}
 
-	if verbose {
-		log.ErrPrintf("token endpoint: %s\n", tokenEndpoint)
-		maskedBody := url.Values{}
-		for k, v := range body {
-			if k == "client_secret" {
-				maskedBody.Set(k, "*****")
-			} else {
-				maskedBody[k] = v
-			}
+	log.Printf("token endpoint: %s\n", tokenEndpoint)
+	maskedBody := url.Values{}
+	for k, v := range body {
+		if k == "client_secret" {
+			maskedBody.Set(k, "*****")
+		} else {
+			maskedBody[k] = v
 		}
-		if len(maskedBody) > 0 {
-			log.ErrPrintf("token request body: %s\n", maskedBody.Encode())
-		}
+	}
+	if len(maskedBody) > 0 {
+		log.Printf("token request body: %s\n", maskedBody.Encode())
 	}
 
 	req, err := http.NewRequest("POST", tokenEndpoint, strings.NewReader(body.Encode()))
@@ -77,9 +75,7 @@ func (tReq *TokenRequest) Execute(tokenEndpoint string, verbose bool, httpClient
 		}
 	}()
 
-	if verbose {
-		log.ErrPrintf("token response status: %s\n", resp.Status)
-	}
+	log.Printf("token response status: %s\n", resp.Status)
 
 	dec := json.NewDecoder(resp.Body)
 	err = dec.Decode(&tResp)

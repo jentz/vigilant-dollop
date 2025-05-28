@@ -22,7 +22,7 @@ type IntrospectionRequest struct {
 	AuthMethod     AuthMethodValue `schema:"-"` // not part of the request
 }
 
-func (tReq *IntrospectionRequest) Execute(introspectionEndpoint string, verbose bool, httpClient *http.Client) (tResp *IntrospectionResponse, err error) {
+func (tReq *IntrospectionRequest) Execute(introspectionEndpoint string, httpClient *http.Client) (tResp *IntrospectionResponse, err error) {
 	encoder := schema.NewEncoder()
 	body := url.Values{}
 	err = encoder.Encode(tReq, body)
@@ -35,19 +35,17 @@ func (tReq *IntrospectionRequest) Execute(introspectionEndpoint string, verbose 
 		body.Del("client_secret")
 	}
 
-	if verbose {
-		log.ErrPrintf("introspection endpoint: %s\n", introspectionEndpoint)
-		maskedBody := url.Values{}
-		for k, v := range body {
-			if k == "client_secret" {
-				maskedBody.Set(k, "*****")
-			} else {
-				maskedBody[k] = v
-			}
+	log.Printf("introspection endpoint: %s\n", introspectionEndpoint)
+	maskedBody := url.Values{}
+	for k, v := range body {
+		if k == "client_secret" {
+			maskedBody.Set(k, "*****")
+		} else {
+			maskedBody[k] = v
 		}
-		if len(maskedBody) > 0 {
-			log.ErrPrintf("introspection request body: %s\n", maskedBody.Encode())
-		}
+	}
+	if len(maskedBody) > 0 {
+		log.Printf("introspection request body: %s\n", maskedBody.Encode())
 	}
 
 	req, err := http.NewRequest("POST", introspectionEndpoint, strings.NewReader(body.Encode()))
@@ -77,9 +75,7 @@ func (tReq *IntrospectionRequest) Execute(introspectionEndpoint string, verbose 
 		}
 	}()
 
-	if verbose {
-		log.ErrPrintf("introspection response status: %s\n", resp.Status)
-	}
+	log.Printf("introspection response status: %s\n", resp.Status)
 
 	dec := json.NewDecoder(resp.Body)
 	err = dec.Decode(&tResp)

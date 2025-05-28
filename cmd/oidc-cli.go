@@ -37,19 +37,19 @@ func usage() {
 Usage:
   oidc-cli [flags] <command> [command-flags]`
 
-	log.ErrPrintln(intro)
-	log.ErrPrintln("\nCommands:")
+	log.Outputln(intro)
+	log.Outputln("\nCommands:")
 	for _, cmd := range commands {
-		log.ErrPrintf("  %-18s: %s\n", cmd.Name, cmd.Help)
+		log.Outputf("  %-18s: %s\n", cmd.Name, cmd.Help)
 	}
 
-	log.ErrPrintln("\nFlags:")
+	log.Outputln("\nFlags:")
 	// Prints a help string for each flag we defined earlier using
 	// flag.BoolVar (and related functions)
 	flag.PrintDefaults()
 
-	log.ErrPrintln()
-	log.ErrPrintf("Run `oidc-cli <command> -h` to get help for a specific command\n\n")
+	log.Outputln()
+	log.Outputf("Run `oidc-cli <command> -h` to get help for a specific command\n\n")
 }
 
 func runCommand(name string, args []string, globalConf *oidc.Config) {
@@ -58,7 +58,7 @@ func runCommand(name string, args []string, globalConf *oidc.Config) {
 	})
 
 	if cmdIdx < 0 {
-		log.ErrPrintf("command \"%s\" not found\n\n", name)
+		log.Errorf("command \"%s\" not found\n\n", name)
 		flag.Usage()
 		os.Exit(1)
 	}
@@ -71,11 +71,11 @@ func runCommand(name string, args []string, globalConf *oidc.Config) {
 
 	command, output, err := cmd.Configure(name, args, globalConf)
 	if errors.Is(err, flag.ErrHelp) {
-		log.ErrPrintf("error: %v\n", output)
+		log.Errorf("error: %v\n", output)
 		os.Exit(2)
 	} else if err != nil {
-		log.ErrPrintln("got error:", err)
-		log.ErrPrintln("output:\n", output)
+		log.Errorln("got error:", err)
+		log.Errorln("output:\n", output)
 		os.Exit(1)
 	}
 
@@ -85,7 +85,7 @@ func runCommand(name string, args []string, globalConf *oidc.Config) {
 
 	go func() {
 		sig := <-signalChan
-		log.ErrPrintf("\nreceived signal: %s, cancelling...\n", sig)
+		log.Errorf("\nreceived signal: %s, cancelling...\n", sig)
 		cancel()
 	}()
 
@@ -97,13 +97,13 @@ func runCommand(name string, args []string, globalConf *oidc.Config) {
 
 	if err := command.Run(ctx); err != nil {
 		if errors.Is(err, context.Canceled) {
-			log.ErrPrintln("operation cancelled")
+			log.Errorln("operation cancelled")
 			os.Exit(0)
 		} else if errors.Is(err, context.DeadlineExceeded) {
-			log.ErrPrintln("operation timed out")
+			log.Errorln("operation timed out")
 			os.Exit(1)
 		}
-		log.ErrPrintf("error: %v\n", err.Error())
+		log.Errorf("error: %v\n", err.Error())
 		os.Exit(1)
 	}
 }
@@ -113,11 +113,11 @@ func main() {
 
 	globalConf, args, output, err := parseGlobalFlags("global flags", os.Args[1:])
 	if errors.Is(err, flag.ErrHelp) {
-		log.ErrPrintln(output)
+		log.Errorln(output)
 		os.Exit(2)
 	} else if err != nil {
-		log.ErrPrintln("got error:", err)
-		log.ErrPrintln("output:\n", output)
+		log.Errorln("got error:", err)
+		log.Errorln("output:\n", output)
 		os.Exit(1)
 	}
 
