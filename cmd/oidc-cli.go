@@ -4,13 +4,13 @@ import (
 	"context"
 	"errors"
 	"flag"
-	"github.com/jentz/vigilant-dollop/pkg/log"
 	"os"
 	"os/signal"
 	"slices"
 	"syscall"
 
 	oidc "github.com/jentz/vigilant-dollop"
+	"github.com/jentz/vigilant-dollop/pkg/log"
 )
 
 type CommandRunner interface {
@@ -28,6 +28,7 @@ var commands = []Command{
 	{Name: "client_credentials", Help: "Uses the client credentials flow to get a token response", Configure: parseClientCredentialsFlags},
 	{Name: "introspect", Help: "Uses the introspection flow to validate a token and fetch the associated claims", Configure: parseIntrospectFlags},
 	{Name: "token_refresh", Help: "Uses the token refresh flow to exchange a refresh token and obtain new tokens", Configure: parseTokenRefreshFlags},
+	{Name: "version", Help: "Prints the version of oidc-cli"},
 	{Name: "help", Help: "Prints help"},
 }
 
@@ -66,6 +67,11 @@ func runCommand(name string, args []string, globalConf *oidc.Config) {
 	cmd := commands[cmdIdx]
 	if cmd.Name == "help" {
 		flag.Usage()
+		os.Exit(0)
+	}
+
+	if cmd.Name == "version" {
+		log.Outputln("oidc-cli version:", oidc.Version)
 		os.Exit(0)
 	}
 
