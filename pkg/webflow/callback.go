@@ -51,7 +51,23 @@ func (s *CallbackServer) Start(ctx context.Context) error {
 		ReadTimeout: 10 * time.Second,
 	}
 
-	return s.server.ListenAndServe()
+	// Channel to catch server errors
+	errChan := make(chan error, 1)
+	go func() {
+		errChan <- s.server.ListenAndServe()
+	}()
+
+	// Wait for context cancellation or server error
+	select {
+	case <-ctx.Done():
+		// Initiate graceful shutdown
+		return s.server.Shutdown(context.Background())
+	case err := <-errChan:
+		if err == http.ErrServerClosed {
+			return nil
+		}
+		return err
+	}
 }
 
 func (s *CallbackServer) WaitForCallback(ctx context.Context) (*CallbackResponse, error) {
