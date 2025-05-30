@@ -30,7 +30,6 @@ type AuthorizationRequest struct {
 }
 
 func (aReq *AuthorizationRequest) Execute(authEndpoint string, callback string, customArgs ...string) (aResp *AuthorizationResponse, err error) {
-
 	callbackServer, err := webflow.NewCallbackServer(callback)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create callback server: %w", err)
@@ -71,7 +70,7 @@ func (aReq *AuthorizationRequest) Execute(authEndpoint string, callback string, 
 	browser := webflow.NewSystemBrowser()
 	err = browser.Open(requestURL)
 	if err != nil {
-		log.Errorf("unable to open webflow because %v, visit %s to continue\n", err, requestURL)
+		log.Errorf("unable to open browser because %v, visit %s to continue\n", err, requestURL)
 	}
 
 	callbackResp, err := callbackServer.WaitForCallback(ctx)
