@@ -1,4 +1,4 @@
-package browser
+package webflow
 
 func openBrowser(url string) error {
 	return runCmd("xdg-open", url)
