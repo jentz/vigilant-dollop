@@ -103,7 +103,7 @@ func (c *AuthorizationCodeFlow) Run(ctx context.Context) error {
 		}
 	}
 
-	aResp, err := aReq.Execute(c.Config.AuthorizationEndpoint, c.FlowConfig.CallbackURI, c.FlowConfig.CustomArgs...)
+	aResp, err := aReq.Execute(ctx, c.Config.AuthorizationEndpoint, c.FlowConfig.CallbackURI, c.FlowConfig.CustomArgs...)
 	if err != nil {
 		return err
 	}

@@ -2,6 +2,7 @@ package oidc
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -29,20 +30,31 @@ type AuthorizationRequest struct {
 	RequestURI          string `schema:"request_uri,omitempty"`
 }
 
-func (aReq *AuthorizationRequest) Execute(authEndpoint string, callback string, customArgs ...string) (aResp *AuthorizationResponse, err error) {
+func (aReq *AuthorizationRequest) Execute(ctx context.Context, authEndpoint string, callback string, customArgs ...string) (aResp *AuthorizationResponse, err error) {
 	callbackServer, err := webflow.NewCallbackServer(callback)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create callback server: %w", err)
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
+	ctx, cancel := context.WithTimeout(ctx, 5*time.Minute)
 	defer cancel()
 
+	serverErrChan := make(chan error, 1)
 	go func() {
-		if err := callbackServer.Start(ctx); err != nil && err != http.ErrServerClosed {
-			log.Errorf("callback server failed to start: %v\n", err)
+		if err := callbackServer.Start(ctx); err != nil && !errors.Is(err, http.ErrServerClosed) {
+			serverErrChan <- err
 		}
 	}()
+
+	// Give the server a moment to start or fail
+	select {
+	case err := <-serverErrChan:
+		return nil, fmt.Errorf("callback server failed to start: %w", err)
+	case <-ctx.Done():
+		return nil, ctx.Err()
+	case <-time.After(100 * time.Millisecond):
+		// Server started successfully
+	}
 
 	authURL, err := url.Parse(authEndpoint)
 	if err != nil {

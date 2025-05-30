@@ -85,20 +85,22 @@ func runCommand(name string, args []string, globalConf *oidc.Config) {
 		os.Exit(1)
 	}
 
-	ctx, cancel := context.WithCancel(context.Background())
 	signalChan := make(chan os.Signal, 1)
 	signal.Notify(signalChan, os.Interrupt, syscall.SIGTERM)
 
+	defer func() {
+		signal.Stop(signalChan)
+		close(signalChan)
+	}()
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	// handle signals
 	go func() {
 		sig := <-signalChan
 		log.Errorf("\nreceived signal: %s, cancelling...\n", sig)
 		cancel()
-	}()
-
-	defer func() {
-		cancel()
-		signal.Stop(signalChan)
-		close(signalChan)
 	}()
 
 	if err := command.Run(ctx); err != nil {
