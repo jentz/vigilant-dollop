@@ -1,13 +1,16 @@
 package oidc
 
 import (
+	"context"
 	"fmt"
-	"github.com/jentz/vigilant-dollop/pkg/log"
+	"net/http"
 	"net/url"
 	"strings"
+	"time"
 
 	"github.com/gorilla/schema"
-	"github.com/jentz/vigilant-dollop/pkg/browser"
+	"github.com/jentz/vigilant-dollop/pkg/log"
+	"github.com/jentz/vigilant-dollop/pkg/webflow"
 )
 
 type AuthorizationRequest struct {
@@ -27,24 +30,31 @@ type AuthorizationRequest struct {
 }
 
 func (aReq *AuthorizationRequest) Execute(authEndpoint string, callback string, customArgs ...string) (aResp *AuthorizationResponse, err error) {
-	callbackEndpoint := &callbackEndpoint{}
-	callbackURL, err := url.Parse(callback)
+
+	callbackServer, err := webflow.NewCallbackServer(callback)
 	if err != nil {
-		log.Printf("unable to parse redirect uri %s because %v\n", aReq.RedirectURI, err)
-		return nil, err
+		return nil, fmt.Errorf("failed to create callback server: %w", err)
 	}
-	callbackEndpoint.start(callbackURL.Host, callbackURL.Path)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
+	defer cancel()
+
+	go func() {
+		if err := callbackServer.Start(ctx); err != nil && err != http.ErrServerClosed {
+			log.Errorf("callback server failed to start: %v\n", err)
+		}
+	}()
 
 	authURL, err := url.Parse(authEndpoint)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to parse auth endpoint: %w", err)
 	}
 
 	encoder := schema.NewEncoder()
 	query := authURL.Query()
 	err = encoder.Encode(aReq, query)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to encode parameters: %w", err)
 	}
 
 	// Add custom args to the query string
@@ -58,18 +68,22 @@ func (aReq *AuthorizationRequest) Execute(authEndpoint string, callback string, 
 
 	log.Printf("authorization request: %s\n", requestURL)
 
-	err = browser.OpenURL(requestURL)
+	browser := webflow.NewSystemBrowser()
+	err = browser.Open(requestURL)
 	if err != nil {
-		log.Printf("unable to open browser because %v, visit %s to continue\n", err, requestURL)
+		log.Errorf("unable to open webflow because %v, visit %s to continue\n", err, requestURL)
 	}
 
-	<-callbackEndpoint.shutdownSignal
-	callbackEndpoint.stop()
-
-	if callbackEndpoint.code != "" {
-		aResp = &AuthorizationResponse{}
-		aResp.Code = callbackEndpoint.code
-		return aResp, nil
+	callbackResp, err := callbackServer.WaitForCallback(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("callback failed: %w", err)
 	}
-	return nil, fmt.Errorf("authorization failed with error %s and description %s", callbackEndpoint.errorMsg, callbackEndpoint.errorDescription)
+
+	if callbackResp.Code == "" {
+		return nil, fmt.Errorf("authorization failed with error %s and description %s", callbackResp.ErrorMsg, callbackResp.ErrorDescription)
+	}
+
+	return &AuthorizationResponse{
+		Code: callbackResp.Code,
+	}, nil
 }
