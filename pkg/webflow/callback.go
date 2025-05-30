@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/jentz/vigilant-dollop/pkg/log"
+	"net"
 	"net/http"
 	"net/url"
 	"text/template"
@@ -51,10 +52,16 @@ func (s *CallbackServer) Start(ctx context.Context) error {
 		ReadTimeout: 10 * time.Second,
 	}
 
+	// Create a listener first to ensure we can bind to the port
+	listener, err := net.Listen("tcp", s.host)
+	if err != nil {
+		return fmt.Errorf("failed to listen on %s: %w", s.host, err)
+	}
+
 	// Channel to catch server errors
 	errChan := make(chan error, 1)
 	go func() {
-		errChan <- s.server.ListenAndServe()
+		errChan <- s.server.Serve(listener)
 	}()
 
 	// Wait for context cancellation or server error
@@ -63,7 +70,7 @@ func (s *CallbackServer) Start(ctx context.Context) error {
 		// Initiate graceful shutdown
 		return s.server.Shutdown(context.Background())
 	case err := <-errChan:
-		if err == http.ErrServerClosed {
+		if errors.Is(err, http.ErrServerClosed) {
 			return nil
 		}
 		return err
