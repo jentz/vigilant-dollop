@@ -2,15 +2,14 @@ package oidc
 
 import (
 	"context"
-	"crypto/tls"
 	"fmt"
 	"github.com/jentz/vigilant-dollop/pkg/log"
-	"net/http"
 )
 
 type TokenRefreshFlow struct {
 	Config     *Config
 	FlowConfig *TokenRefreshFlowConfig
+	client     *Client
 }
 
 type TokenRefreshFlowConfig struct {
@@ -19,6 +18,8 @@ type TokenRefreshFlowConfig struct {
 }
 
 func (c *TokenRefreshFlow) Run(ctx context.Context) error {
+	c.client = NewClient(c.Config)
+
 	err := c.Config.DiscoverEndpoints(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to discover endpoints: %w", err)
@@ -33,15 +34,7 @@ func (c *TokenRefreshFlow) Run(ctx context.Context) error {
 		AuthMethod:   c.Config.AuthMethod,
 	}
 
-	client := &http.Client{
-		Transport: &http.Transport{
-			TLSClientConfig: &tls.Config{
-				InsecureSkipVerify: c.Config.SkipTLSVerify,
-			},
-		},
-	}
-
-	resp, err := req.Execute(c.Config.TokenEndpoint, client)
+	resp, err := req.Execute(c.Config.TokenEndpoint, c.client.http)
 	if err != nil {
 		return err
 	}
