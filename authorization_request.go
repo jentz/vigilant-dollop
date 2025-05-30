@@ -79,7 +79,7 @@ func (aReq *AuthorizationRequest) Execute(ctx context.Context, authEndpoint stri
 
 	log.Printf("authorization request: %s\n", requestURL)
 
-	browser := webflow.NewSystemBrowser()
+	browser := webflow.NewBrowser()
 	err = browser.Open(requestURL)
 	if err != nil {
 		log.Errorf("unable to open browser because %v, visit %s to continue\n", err, requestURL)
