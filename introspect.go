@@ -2,15 +2,14 @@ package oidc
 
 import (
 	"context"
-	"crypto/tls"
 	"fmt"
 	"github.com/jentz/vigilant-dollop/pkg/log"
-	"net/http"
 )
 
 type IntrospectFlow struct {
 	Config     *Config
 	FlowConfig *IntrospectFlowConfig
+	client     *Client
 }
 
 type IntrospectFlowConfig struct {
@@ -21,6 +20,8 @@ type IntrospectFlowConfig struct {
 }
 
 func (c *IntrospectFlow) Run(ctx context.Context) error {
+	c.client = NewClient(c.Config)
+
 	err := c.Config.DiscoverEndpoints(ctx)
 	if err != nil {
 		return fmt.Errorf("endpoint discpvery failed: %w", err)
@@ -36,15 +37,7 @@ func (c *IntrospectFlow) Run(ctx context.Context) error {
 		AuthMethod:     c.Config.AuthMethod,
 	}
 
-	client := &http.Client{
-		Transport: &http.Transport{
-			TLSClientConfig: &tls.Config{
-				InsecureSkipVerify: c.Config.SkipTLSVerify,
-			},
-		},
-	}
-
-	resp, err := req.Execute(c.Config.IntrospectionEndpoint, client)
+	resp, err := req.Execute(c.Config.IntrospectionEndpoint, c.client.http)
 	if err != nil {
 		return err
 	}

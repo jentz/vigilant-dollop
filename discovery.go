@@ -24,31 +24,29 @@ type DiscoveryConfiguration struct {
 	TokenEndpointAuthMethods           []string `json:"token_endpoint_auth_methods_supported,omitempty"`
 }
 
-// discover fetches OIDC configuration from the discovery endpoint
+// Discover fetches OIDC configuration from the discovery endpoint
 // If wellKnownURL is provided, it will be used as the discovery endpoint
 // Otherwise, the standard discovery endpoint will be used
-func discover(ctx context.Context, issuer string, httpClient *http.Client, wellKnownURL string) (*DiscoveryConfiguration, error) {
-	// Determine the well-known URL
+func (c *Client) Discover(ctx context.Context) (*DiscoveryConfiguration, error) {
 	var discoveryURL string
-	if wellKnownURL != "" {
-		discoveryURL = wellKnownURL
+	if c.config.DiscoveryEndpoint != "" {
+		discoveryURL = c.config.DiscoveryEndpoint
 	} else {
-		discoveryURL = strings.TrimSuffix(issuer, "/") + DiscoveryEndpoint
+		discoveryURL = strings.TrimRight(c.config.IssuerURL, "/") + DiscoveryEndpoint
 	}
-
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, discoveryURL, nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create discovery request: %w", err)
 	}
 
-	discoveryConfig := new(DiscoveryConfiguration)
-	err = httpRequest(httpClient, req, &discoveryConfig)
+	discoveryConfig := &DiscoveryConfiguration{}
+	err = httpRequest(c.http, req, discoveryConfig)
 	if err != nil {
 		return nil, fmt.Errorf("failed to discover endpoints: %w", err)
 	}
 
 	// Validate issuer - only if using standard discovery endpoint
-	if wellKnownURL == "" && discoveryConfig.Issuer != issuer {
+	if c.config.DiscoveryEndpoint == "" && discoveryConfig.Issuer != c.config.IssuerURL {
 		return nil, ErrIssuerInvalid
 	}
 

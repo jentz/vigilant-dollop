@@ -15,44 +15,30 @@ func (f mockTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 	return f(req)
 }
 
-const (
-	defaultBody = `{
-					"issuer": "https://example.com",
-					"authorization_endpoint": "https://example.com/auth",
-					"token_endpoint": "https://example.com/token",
-					"jwks_uri": "https://example.com/jwks"
-					}`
-)
+const defaultBody = `{
+    "issuer": "https://example.com",
+    "authorization_endpoint": "https://example.com/auth",
+    "token_endpoint": "https://example.com/token",
+    "jwks_uri": "https://example.com/jwks"
+}`
 
-func TestDiscover(t *testing.T) {
-	type args struct {
-		ctx          context.Context
-		issuer       string
-		httpClient   *http.Client
-		wellKnownURL string
-	}
-	type httpRes struct {
-		body       string
-		statusCode int
-	}
+func TestClientDiscover(t *testing.T) {
 	tests := []struct {
-		name    string
-		args    args
-		httpRes httpRes
-		want    *DiscoveryConfiguration
-		wantErr bool
-		wantURL string
+		name     string
+		config   *Config
+		response *http.Response
+		want     *DiscoveryConfiguration
+		wantErr  bool
+		wantURL  string
 	}{
 		{
-			name: "simple",
-			args: args{
-				ctx:        context.Background(),
-				issuer:     "https://example.com",
-				httpClient: http.DefaultClient,
+			name: "successful discovery",
+			config: &Config{
+				IssuerURL: "https://example.com",
 			},
-			httpRes: httpRes{
-				body:       defaultBody,
-				statusCode: http.StatusOK,
+			response: &http.Response{
+				StatusCode: http.StatusOK,
+				Body:       io.NopCloser(bytes.NewBufferString(defaultBody)),
 			},
 			want: &DiscoveryConfiguration{
 				Issuer:                "https://example.com",
@@ -60,81 +46,77 @@ func TestDiscover(t *testing.T) {
 				TokenEndpoint:         "https://example.com/token",
 				JwksURI:               "https://example.com/jwks",
 			},
-			wantErr: false,
 			wantURL: "https://example.com/.well-known/openid-configuration",
+		},
+		{
+			name: "custom discovery endpoint",
+			config: &Config{
+				IssuerURL:         "https://example.com",
+				DiscoveryEndpoint: "https://example.com/.well-known/custom",
+			},
+			response: &http.Response{
+				StatusCode: http.StatusOK,
+				Body:       io.NopCloser(bytes.NewBufferString(defaultBody)),
+			},
+			want: &DiscoveryConfiguration{
+				Issuer:                "https://example.com",
+				AuthorizationEndpoint: "https://example.com/auth",
+				TokenEndpoint:         "https://example.com/token",
+				JwksURI:               "https://example.com/jwks",
+			},
+			wantURL: "https://example.com/.well-known/custom",
 		},
 		{
 			name: "invalid issuer",
-			args: args{
-				ctx:        context.Background(),
-				issuer:     "https://example.com",
-				httpClient: http.DefaultClient,
+			config: &Config{
+				IssuerURL: "https://example.com",
 			},
-			httpRes: httpRes{
-				body:       `{"issuer": "https://invalid.com"}`,
-				statusCode: http.StatusOK,
+			response: &http.Response{
+				StatusCode: http.StatusOK,
+				Body:       io.NopCloser(bytes.NewBufferString(`{"issuer": "https://invalid.com"}`)),
 			},
-			want:    nil,
 			wantErr: true,
 			wantURL: "https://example.com/.well-known/openid-configuration",
 		},
 		{
-			name: "override wellknown url",
-			args: args{
-				ctx:          context.Background(),
-				issuer:       "https://example.com",
-				httpClient:   http.DefaultClient,
-				wellKnownURL: "https://example.com/.well-known/override",
+			name: "http error",
+			config: &Config{
+				IssuerURL: "https://example.com",
 			},
-			httpRes: httpRes{
-				body:       defaultBody,
-				statusCode: http.StatusOK,
+			response: &http.Response{
+				StatusCode: http.StatusNotFound,
+				Body:       io.NopCloser(bytes.NewBufferString("not found")),
 			},
-			want: &DiscoveryConfiguration{
-				Issuer:                "https://example.com",
-				AuthorizationEndpoint: "https://example.com/auth",
-				TokenEndpoint:         "https://example.com/token",
-				JwksURI:               "https://example.com/jwks",
-			},
-			wantErr: false,
-			wantURL: "https://example.com/.well-known/override",
-		},
-		{
-			name: "non 200 status code",
-			args: args{
-				ctx:        context.Background(),
-				issuer:     "https://example.com",
-				httpClient: http.DefaultClient,
-			},
-			httpRes: httpRes{
-				body:       "expected error",
-				statusCode: http.StatusNotFound,
-			},
-			want:    nil,
 			wantErr: true,
 			wantURL: "https://example.com/.well-known/openid-configuration",
 		},
 	}
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			var capturedRequest *http.Request
-			tt.args.httpClient.Transport = mockTransport(func(req *http.Request) (*http.Response, error) {
+			transport := mockTransport(func(req *http.Request) (*http.Response, error) {
 				capturedRequest = req
-				return &http.Response{
-					StatusCode: tt.httpRes.statusCode,
-					Body:       io.NopCloser(bytes.NewBufferString(tt.httpRes.body)),
-				}, nil
+				return tt.response, nil
 			})
-			got, err := discover(tt.args.ctx, tt.args.issuer, tt.args.httpClient, tt.args.wellKnownURL)
+
+			client := &Client{
+				config: tt.config,
+				http:   &http.Client{Transport: transport},
+			}
+
+			got, err := client.Discover(context.Background())
 			if (err != nil) != tt.wantErr {
-				t.Errorf("discover() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("Client.Discover() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("discover() got = %v, want %v", got, tt.want)
+
+			if !tt.wantErr && !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("Client.Discover() = %v, want %v", got, tt.want)
 			}
+
 			if capturedRequest.URL.String() != tt.wantURL {
-				t.Errorf("discover() got = %v, want URL = %v", capturedRequest.URL.String(), tt.wantURL)
+				t.Errorf("Client.Discover() URL = %v, want %v", capturedRequest.URL.String(), tt.wantURL)
 			}
 		})
 	}

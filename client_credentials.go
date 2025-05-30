@@ -9,6 +9,7 @@ import (
 type ClientCredentialsFlow struct {
 	Config     *Config
 	FlowConfig *ClientCredentialsFlowConfig
+	client     *Client
 }
 
 type ClientCredentialsFlowConfig struct {
@@ -16,6 +17,8 @@ type ClientCredentialsFlowConfig struct {
 }
 
 func (c *ClientCredentialsFlow) Run(ctx context.Context) error {
+	c.client = NewClient(c.Config)
+
 	err := c.Config.DiscoverEndpoints(ctx)
 	if err != nil {
 		return fmt.Errorf("endpoint discovery failed: %w", err)
@@ -32,9 +35,7 @@ func (c *ClientCredentialsFlow) Run(ctx context.Context) error {
 		req.Scope = c.FlowConfig.Scopes
 	}
 
-	client := c.Config.newHTTPClient()
-
-	resp, err := req.Execute(c.Config.TokenEndpoint, client)
+	resp, err := req.Execute(c.Config.TokenEndpoint, c.client.http)
 	if err != nil {
 		return err
 	}

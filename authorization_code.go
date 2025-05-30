@@ -2,17 +2,15 @@ package oidc
 
 import (
 	"context"
-	"crypto/tls"
 	"fmt"
-	"github.com/jentz/vigilant-dollop/pkg/log"
-	"net/http"
-
 	"github.com/jentz/vigilant-dollop/pkg/crypto"
+	"github.com/jentz/vigilant-dollop/pkg/log"
 )
 
 type AuthorizationCodeFlow struct {
 	Config     *Config
 	FlowConfig *AuthorizationCodeFlowConfig
+	client     *Client
 }
 
 type AuthorizationCodeFlowConfig struct {
@@ -31,6 +29,8 @@ type AuthorizationCodeFlowConfig struct {
 }
 
 func (c *AuthorizationCodeFlow) Run(ctx context.Context) error {
+	c.client = NewClient(c.Config)
+
 	err := c.Config.DiscoverEndpoints(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to discover endpoints: %w", err)
@@ -43,14 +43,6 @@ func (c *AuthorizationCodeFlow) Run(ctx context.Context) error {
 
 	aReq := AuthorizationRequest{}
 	var codeVerifier string
-
-	client := &http.Client{
-		Transport: &http.Transport{
-			TLSClientConfig: &tls.Config{
-				InsecureSkipVerify: c.Config.SkipTLSVerify,
-			},
-		},
-	}
 
 	if c.FlowConfig.PAR {
 		parReq := PushedAuthorizationRequest{
@@ -73,7 +65,7 @@ func (c *AuthorizationCodeFlow) Run(ctx context.Context) error {
 			parReq.CodeChallenge = crypto.GeneratePKCECodeChallenge(codeVerifier)
 			parReq.CodeChallengeMethod = "S256"
 		}
-		parResp, err := parReq.Execute(c.Config.PushedAuthorizationRequestEndpoint, client, c.FlowConfig.CustomArgs...)
+		parResp, err := parReq.Execute(c.Config.PushedAuthorizationRequestEndpoint, c.client.http, c.FlowConfig.CustomArgs...)
 		if err != nil {
 			return err
 		}
@@ -130,7 +122,7 @@ func (c *AuthorizationCodeFlow) Run(ctx context.Context) error {
 		tReq.DPoPHeader = dpopProof.String()
 	}
 
-	tResp, err := tReq.Execute(c.Config.TokenEndpoint, client)
+	tResp, err := tReq.Execute(c.Config.TokenEndpoint, c.client.http)
 	if err != nil {
 		return err
 	}

@@ -2,11 +2,7 @@ package oidc
 
 import (
 	"context"
-	"crypto/tls"
 	"fmt"
-	"net/http"
-	"time"
-
 	"github.com/jentz/vigilant-dollop/pkg/crypto"
 )
 
@@ -59,25 +55,10 @@ type Config struct {
 	PublicKey                          any
 }
 
-func (c *Config) newHTTPClient() *http.Client {
-	return &http.Client{
-		Transport: &http.Transport{
-			TLSClientConfig: &tls.Config{
-				InsecureSkipVerify: c.SkipTLSVerify,
-			},
-		},
-		Timeout: 10 * time.Second,
-	}
-}
-
 func (c *Config) DiscoverEndpoints(ctx context.Context) error {
-	if ctx == nil {
-		ctx = context.Background()
-	}
+	client := NewClient(c)
 
-	client := c.newHTTPClient()
-
-	discoveryConfig, err := discover(ctx, c.IssuerURL, client, c.DiscoveryEndpoint)
+	discoveryConfig, err := client.Discover(ctx)
 	if err != nil {
 		return fmt.Errorf("endpoint discovery failed: %w", err)
 	}
