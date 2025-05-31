@@ -21,6 +21,11 @@ type CallbackServer struct {
 	path     string
 	server   *http.Server
 	response chan *CallbackResponse
+	// listen is the function to create a network listener. If nil, defaults to net.Listen.
+	// This field allows for dependency injection in tests.
+	listen      func(network, addr string) (net.Listener, error)
+	successTmpl *template.Template
+	errorTmpl   *template.Template
 }
 
 type CallbackResponse struct {
@@ -35,10 +40,23 @@ func NewCallbackServer(callbackURI string) (*CallbackServer, error) {
 		return nil, fmt.Errorf("invalid callback URI: %w", err)
 	}
 
+	successTmpl, err := template.ParseFS(content, "html/callback-success.html")
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse success template: %w", err)
+	}
+
+	errorTmpl, err := template.ParseFS(content, "html/callback-error.html")
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse error template: %w", err)
+	}
+
 	return &CallbackServer{
-		host:     u.Host,
-		path:     u.Path,
-		response: make(chan *CallbackResponse, 1),
+		host:        u.Host,
+		path:        u.Path,
+		response:    make(chan *CallbackResponse, 1),
+		listen:      net.Listen,
+		successTmpl: successTmpl,
+		errorTmpl:   errorTmpl,
 	}, nil
 }
 
@@ -53,7 +71,7 @@ func (s *CallbackServer) Start(ctx context.Context) error {
 	}
 
 	// Create a listener first to ensure we can bind to the port
-	listener, err := net.Listen("tcp", s.host)
+	listener, err := s.listen("tcp", s.host)
 	if err != nil {
 		return fmt.Errorf("failed to listen on %s: %w", s.host, err)
 	}
@@ -90,29 +108,23 @@ func (s *CallbackServer) WaitForCallback(ctx context.Context) (*CallbackResponse
 
 func (s *CallbackServer) handleCallback(w http.ResponseWriter, r *http.Request) {
 	var resp CallbackResponse
-	var templatePath string
+	var tmpl *template.Template
 
 	resp.Code = r.URL.Query().Get("code")
 	resp.ErrorMsg = r.URL.Query().Get("error")
 	resp.ErrorDescription = r.URL.Query().Get("error_description")
 
 	if resp.Code == "" {
-		templatePath = "html/callback-error.html"
+		tmpl = s.errorTmpl
 		w.WriteHeader(http.StatusBadRequest)
 	} else {
-		templatePath = "html/callback-success.html"
+		tmpl = s.successTmpl
 		w.WriteHeader(http.StatusOK)
 	}
 
-	tmpl, err := template.ParseFS(content, templatePath)
-	if err != nil {
-		log.Errorf("failed to parse template %s: %v", templatePath, err)
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-		return
-	}
-
 	if err := tmpl.Execute(w, resp); err != nil {
-		log.Errorf("failed to execute template %s: %v", templatePath, err)
+		log.Errorf("failed to execute template: %v", err)
+		w.WriteHeader(http.StatusInternalServerError)
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		return
 	}
