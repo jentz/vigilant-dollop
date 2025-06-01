@@ -1,7 +1,7 @@
 package oidc
 
 import (
-	"github.com/jentz/oidc-cli/pkg/transport"
+	"github.com/jentz/oidc-cli/internal/transport"
 	"net/http"
 	"time"
 )

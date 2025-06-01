@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/jentz/oidc-cli/pkg/log"
+	"github.com/jentz/oidc-cli/internal/log"
 	"io"
 	"net/http"
 	"net/url"

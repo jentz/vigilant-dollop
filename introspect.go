@@ -3,7 +3,7 @@ package oidc
 import (
 	"context"
 	"fmt"
-	"github.com/jentz/oidc-cli/pkg/log"
+	"github.com/jentz/oidc-cli/internal/log"
 )
 
 type IntrospectFlow struct {

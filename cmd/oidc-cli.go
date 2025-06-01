@@ -10,7 +10,7 @@ import (
 	"syscall"
 
 	oidc "github.com/jentz/oidc-cli"
-	"github.com/jentz/oidc-cli/pkg/log"
+	"github.com/jentz/oidc-cli/internal/log"
 )
 
 type CommandRunner interface {
