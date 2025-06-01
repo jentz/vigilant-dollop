@@ -35,7 +35,7 @@ func (c *ClientCredentialsFlow) Run(ctx context.Context) error {
 		req.Scope = c.FlowConfig.Scopes
 	}
 
-	resp, err := req.Execute(c.Config.TokenEndpoint, c.client.http)
+	resp, err := req.Execute(ctx, c.Config.TokenEndpoint, c.client.http)
 	if err != nil {
 		return err
 	}

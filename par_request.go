@@ -1,6 +1,7 @@
 package oidc
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"github.com/jentz/vigilant-dollop/pkg/log"
@@ -28,7 +29,7 @@ type PushedAuthorizationRequest struct {
 	AuthMethod          AuthMethodValue `schema:"-"` // not part of the request
 }
 
-func (parReq *PushedAuthorizationRequest) Execute(pushedAuthEndpoint string, httpClient *http.Client, customArgs ...string) (parResp *PushedAuthorizationResponse, err error) {
+func (parReq *PushedAuthorizationRequest) Execute(ctx context.Context, pushedAuthEndpoint string, httpClient *http.Client, customArgs ...string) (parResp *PushedAuthorizationResponse, err error) {
 	_, err = url.Parse(parReq.RedirectURI)
 	if err != nil {
 		log.Printf("unable to parse redirect uri %s because %v\n", parReq.RedirectURI, err)
@@ -66,7 +67,7 @@ func (parReq *PushedAuthorizationRequest) Execute(pushedAuthEndpoint string, htt
 		log.Printf("pushed authorization request body: %s\n", maskedBody.Encode())
 	}
 
-	req, err := http.NewRequest("POST", pushedAuthEndpoint, strings.NewReader(body.Encode()))
+	req, err := http.NewRequestWithContext(ctx, "POST", pushedAuthEndpoint, strings.NewReader(body.Encode()))
 	if err != nil {
 		return nil, err
 	}

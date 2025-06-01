@@ -1,8 +1,10 @@
 package oidc
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"github.com/jentz/vigilant-dollop/pkg/log"
 	"net/http"
 	"net/url"
@@ -24,7 +26,7 @@ type TokenRequest struct {
 	DPoPHeader   string          `schema:"-"` // not part of the request
 }
 
-func (tReq *TokenRequest) Execute(tokenEndpoint string, httpClient *http.Client) (tResp *TokenResponse, err error) {
+func (tReq *TokenRequest) Execute(ctx context.Context, tokenEndpoint string, httpClient *http.Client) (tResp *TokenResponse, err error) {
 	encoder := schema.NewEncoder()
 	body := url.Values{}
 	err = encoder.Encode(tReq, body)
@@ -50,7 +52,7 @@ func (tReq *TokenRequest) Execute(tokenEndpoint string, httpClient *http.Client)
 		log.Printf("token request body: %s\n", maskedBody.Encode())
 	}
 
-	req, err := http.NewRequest("POST", tokenEndpoint, strings.NewReader(body.Encode()))
+	req, err := http.NewRequestWithContext(ctx, "POST", tokenEndpoint, strings.NewReader(body.Encode()))
 	if err != nil {
 		return nil, err
 	}
@@ -66,7 +68,7 @@ func (tReq *TokenRequest) Execute(tokenEndpoint string, httpClient *http.Client)
 
 	resp, err := httpClient.Do(req)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error while executing token request: %w", err)
 	}
 	defer func() {
 		cerr := resp.Body.Close()
