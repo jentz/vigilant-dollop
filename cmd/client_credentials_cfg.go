@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"flag"
 
-	oidc "github.com/jentz/vigilant-dollop"
+	oidc "github.com/jentz/oidc-cli"
 )
 
 func parseClientCredentialsFlags(name string, args []string, oidcConf *oidc.Config) (runner CommandRunner, output string, err error) {

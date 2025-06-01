@@ -9,8 +9,8 @@ import (
 	"slices"
 	"syscall"
 
-	oidc "github.com/jentz/vigilant-dollop"
-	"github.com/jentz/vigilant-dollop/pkg/log"
+	oidc "github.com/jentz/oidc-cli"
+	"github.com/jentz/oidc-cli/pkg/log"
 )
 
 type CommandRunner interface {

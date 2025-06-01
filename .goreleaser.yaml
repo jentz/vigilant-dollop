@@ -45,19 +45,19 @@ changelog:
 brews:
   - name: oidc-cli
     description: Command-line OIDC client, get a token without all the fuss
-    homepage: https://github.com/jentz/vigilant-dollop
+    homepage: https://github.com/jentz/oidc-cli
     license: MIT
     directory: Formula
     repository:
       owner: jentz
-      name: homebrew-vigilant-dollop
+      name: homebrew-oidc-cli
 
 scoops:
   - name: oidc-cli
     description: Command-line OIDC client, get a token without all the fuss
     directory: bucket
-    homepage: https://github.com/jentz/vigilant-dollop
+    homepage: https://github.com/jentz/oidc-cli
     license: MIT
     repository:
       owner: jentz
-      name: scoop-vigilant-dollop
+      name: scoop-oidc-cli

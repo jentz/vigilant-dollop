@@ -1,7 +1,7 @@
 package oidc
 
 import (
-	"github.com/jentz/vigilant-dollop/pkg/transport"
+	"github.com/jentz/oidc-cli/pkg/transport"
 	"net/http"
 	"time"
 )

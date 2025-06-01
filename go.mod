@@ -1,4 +1,4 @@
-module github.com/jentz/vigilant-dollop
+module github.com/jentz/oidc-cli
 
 go 1.23.9
 

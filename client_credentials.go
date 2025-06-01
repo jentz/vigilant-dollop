@@ -3,7 +3,7 @@ package oidc
 import (
 	"context"
 	"fmt"
-	"github.com/jentz/vigilant-dollop/pkg/log"
+	"github.com/jentz/oidc-cli/pkg/log"
 )
 
 type ClientCredentialsFlow struct {
