@@ -5,7 +5,7 @@ import (
 	"embed"
 	"errors"
 	"fmt"
-	"github.com/jentz/oidc-cli/pkg/log"
+	"github.com/jentz/oidc-cli/internal/log"
 	"net"
 	"net/http"
 	"net/url"

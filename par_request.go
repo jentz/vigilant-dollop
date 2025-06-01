@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"github.com/jentz/oidc-cli/pkg/log"
+	"github.com/jentz/oidc-cli/internal/log"
 	"net/http"
 	"net/url"
 	"strings"

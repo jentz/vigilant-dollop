@@ -3,7 +3,7 @@ package oidc
 import (
 	"context"
 	"fmt"
-	"github.com/jentz/oidc-cli/pkg/crypto"
+	"github.com/jentz/oidc-cli/internal/crypto"
 )
 
 type AuthMethodValue string
