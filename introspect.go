@@ -37,7 +37,7 @@ func (c *IntrospectFlow) Run(ctx context.Context) error {
 		AuthMethod:     c.Config.AuthMethod,
 	}
 
-	resp, err := req.Execute(c.Config.IntrospectionEndpoint, c.client.http)
+	resp, err := req.Execute(ctx, c.Config.IntrospectionEndpoint, c.client.http)
 	if err != nil {
 		return err
 	}

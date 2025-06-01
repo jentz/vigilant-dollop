@@ -1,8 +1,10 @@
 package oidc
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"github.com/jentz/vigilant-dollop/pkg/log"
 	"io"
 	"net/http"
@@ -22,7 +24,7 @@ type IntrospectionRequest struct {
 	AuthMethod     AuthMethodValue `schema:"-"` // not part of the request
 }
 
-func (tReq *IntrospectionRequest) Execute(introspectionEndpoint string, httpClient *http.Client) (tResp *IntrospectionResponse, err error) {
+func (tReq *IntrospectionRequest) Execute(ctx context.Context, introspectionEndpoint string, httpClient *http.Client) (tResp *IntrospectionResponse, err error) {
 	encoder := schema.NewEncoder()
 	body := url.Values{}
 	err = encoder.Encode(tReq, body)
@@ -48,7 +50,7 @@ func (tReq *IntrospectionRequest) Execute(introspectionEndpoint string, httpClie
 		log.Printf("introspection request body: %s\n", maskedBody.Encode())
 	}
 
-	req, err := http.NewRequest("POST", introspectionEndpoint, strings.NewReader(body.Encode()))
+	req, err := http.NewRequestWithContext(ctx, "POST", introspectionEndpoint, strings.NewReader(body.Encode()))
 
 	if err != nil {
 		return nil, err
@@ -81,12 +83,12 @@ func (tReq *IntrospectionRequest) Execute(introspectionEndpoint string, httpClie
 	err = dec.Decode(&tResp)
 	if err != nil {
 		if tReq.ResponseFormat == "json" {
-			return nil, errors.New("failed to parse introspection response")
+			return nil, fmt.Errorf("failed to parse introspection response: %w", err)
 		}
 		// assume the response is a plain JWT
 		body, err := io.ReadAll(resp.Body)
 		if err != nil {
-			return nil, errors.New("failed to read introspection response body")
+			return nil, fmt.Errorf("failed to read introspection response body: %w", err)
 		}
 		tResp = &IntrospectionResponse{
 			Active: true,

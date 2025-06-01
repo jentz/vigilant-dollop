@@ -34,14 +34,14 @@ func (c *TokenRefreshFlow) Run(ctx context.Context) error {
 		AuthMethod:   c.Config.AuthMethod,
 	}
 
-	resp, err := req.Execute(c.Config.TokenEndpoint, c.client.http)
+	resp, err := req.Execute(ctx, c.Config.TokenEndpoint, c.client.http)
 	if err != nil {
-		return err
+		return fmt.Errorf("token request failed: %w", err)
 	}
 
 	jsonStr, err := resp.JSON()
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to marshal token response: %w", err)
 	}
 	log.Outputf(jsonStr + "\n")
 	return nil
