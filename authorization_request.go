@@ -10,8 +10,8 @@ import (
 	"time"
 
 	"github.com/gorilla/schema"
-	"github.com/jentz/vigilant-dollop/pkg/log"
-	"github.com/jentz/vigilant-dollop/pkg/webflow"
+	"github.com/jentz/oidc-cli/pkg/log"
+	"github.com/jentz/oidc-cli/pkg/webflow"
 )
 
 type AuthorizationRequest struct {

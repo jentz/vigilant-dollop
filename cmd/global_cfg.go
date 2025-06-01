@@ -3,9 +3,9 @@ package main
 import (
 	"bytes"
 	"flag"
-	"github.com/jentz/vigilant-dollop/pkg/log"
+	"github.com/jentz/oidc-cli/pkg/log"
 
-	oidc "github.com/jentz/vigilant-dollop"
+	oidc "github.com/jentz/oidc-cli"
 )
 
 func parseGlobalFlags(name string, args []string) (oidcConf *oidc.Config, remainingArgs []string, output string, err error) {

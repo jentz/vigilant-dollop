@@ -4,7 +4,7 @@ import (
 	"reflect"
 	"testing"
 
-	oidc "github.com/jentz/vigilant-dollop"
+	oidc "github.com/jentz/oidc-cli"
 )
 
 func TestParseTokenRefreshFlagsResult(t *testing.T) {

@@ -5,7 +5,7 @@ import (
 	"embed"
 	"errors"
 	"fmt"
-	"github.com/jentz/vigilant-dollop/pkg/log"
+	"github.com/jentz/oidc-cli/pkg/log"
 	"net"
 	"net/http"
 	"net/url"

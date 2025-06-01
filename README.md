@@ -1,4 +1,4 @@
-# vigilant-dollop
+# oidc-cli
 Command-line OIDC client, get a token without all the fuss
 
 ## Usage
@@ -25,11 +25,11 @@ Run `oidc-cli <command> -h` to get help for a specific command
 
 Installing with homebrew
 ```bash
- brew tap jentz/vigilant-dollop
+ brew tap jentz/oidc-cli
  brew install oidc-cli
  ```
 
-You can also download a suitable release for your platform from the [releases page](https://github.com/jentz/vigilant-dollop/releases).
+You can also download a suitable release for your platform from the [releases page](https://github.com/jentz/oidc-cli/releases).
 
 ## Run
 

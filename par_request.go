@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"github.com/jentz/vigilant-dollop/pkg/log"
+	"github.com/jentz/oidc-cli/pkg/log"
 	"net/http"
 	"net/url"
 	"strings"
