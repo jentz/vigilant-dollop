@@ -1,4 +1,4 @@
-package main
+package cmd
 
 import (
 	"bufio"
@@ -6,7 +6,7 @@ import (
 	"flag"
 	"os"
 
-	oidc "github.com/jentz/oidc-cli"
+	"github.com/jentz/oidc-cli/oidc"
 )
 
 func parseIntrospectFlags(name string, args []string, oidcConf *oidc.Config) (runner CommandRunner, output string, err error) {

@@ -1,10 +1,10 @@
-package main
+package cmd
 
 import (
 	"reflect"
 	"testing"
 
-	oidc "github.com/jentz/oidc-cli"
+	"github.com/jentz/oidc-cli/oidc"
 )
 
 func TestParseAuthorizationCodeFlagsResult(t *testing.T) {

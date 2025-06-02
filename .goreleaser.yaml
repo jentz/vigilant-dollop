@@ -17,7 +17,7 @@ builds:
       - linux
       - windows
       - darwin
-    main: ./cmd/
+    main: ./
     binary: oidc-cli
 
 archives:

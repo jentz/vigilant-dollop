@@ -1,10 +1,10 @@
-package main
+package cmd
 
 import (
 	"bytes"
 	"flag"
 
-	oidc "github.com/jentz/oidc-cli"
+	"github.com/jentz/oidc-cli/oidc"
 )
 
 func parseClientCredentialsFlags(name string, args []string, oidcConf *oidc.Config) (runner CommandRunner, output string, err error) {

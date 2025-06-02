@@ -3,8 +3,9 @@ package oidc
 import (
 	"context"
 	"fmt"
-	"github.com/jentz/oidc-cli/internal/crypto"
-	"github.com/jentz/oidc-cli/internal/log"
+
+	"github.com/jentz/oidc-cli/crypto"
+	"github.com/jentz/oidc-cli/log"
 )
 
 type AuthorizationCodeFlow struct {

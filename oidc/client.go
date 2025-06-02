@@ -1,9 +1,10 @@
 package oidc
 
 import (
-	"github.com/jentz/oidc-cli/internal/transport"
 	"net/http"
 	"time"
+
+	"github.com/jentz/oidc-cli/transport"
 )
 
 type Client struct {

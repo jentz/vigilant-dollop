@@ -1,4 +1,4 @@
-package main
+package cmd
 
 import (
 	"context"
@@ -9,8 +9,8 @@ import (
 	"slices"
 	"syscall"
 
-	oidc "github.com/jentz/oidc-cli"
-	"github.com/jentz/oidc-cli/internal/log"
+	"github.com/jentz/oidc-cli/log"
+	"github.com/jentz/oidc-cli/oidc"
 )
 
 type CommandRunner interface {
@@ -32,7 +32,7 @@ var commands = []Command{
 	{Name: "help", Help: "Prints help"},
 }
 
-func usage() {
+func Usage() {
 	intro := `oidc-cli is a command-line OIDC client, get a token without all the fuss
 
 Usage:
@@ -40,8 +40,8 @@ Usage:
 
 	log.Outputln(intro)
 	log.Outputln("\nCommands:")
-	for _, cmd := range commands {
-		log.Outputf("  %-18s: %s\n", cmd.Name, cmd.Help)
+	for _, command := range commands {
+		log.Outputf("  %-18s: %s\n", command.Name, command.Help)
 	}
 
 	log.Outputln("\nFlags:")
@@ -53,7 +53,7 @@ Usage:
 	log.Outputf("Run `oidc-cli <command> -h` to get help for a specific command\n\n")
 }
 
-func runCommand(name string, args []string, globalConf *oidc.Config) {
+func RunCommand(name string, args []string, globalConf *oidc.Config) {
 	cmdIdx := slices.IndexFunc(commands, func(cmd Command) bool {
 		return cmd.Name == name
 	})
@@ -114,28 +114,4 @@ func runCommand(name string, args []string, globalConf *oidc.Config) {
 		log.Errorf("error: %v\n", err.Error())
 		os.Exit(1)
 	}
-}
-
-func main() {
-	flag.Usage = usage
-
-	globalConf, args, output, err := parseGlobalFlags("global flags", os.Args[1:])
-	if errors.Is(err, flag.ErrHelp) {
-		log.Errorln(output)
-		os.Exit(2)
-	} else if err != nil {
-		log.Errorln("got error:", err)
-		log.Errorln("output:\n", output)
-		os.Exit(1)
-	}
-
-	// If no command is specified, print usage and exit
-	if len(args) < 1 {
-		usage()
-		os.Exit(1)
-	}
-
-	subCmd := args[0]
-	subCmdArgs := args[1:]
-	runCommand(subCmd, subCmdArgs, globalConf)
 }

@@ -4,10 +4,11 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"github.com/jentz/oidc-cli/internal/log"
 	"net/http"
 	"net/url"
 	"strings"
+
+	"github.com/jentz/oidc-cli/log"
 
 	"github.com/gorilla/schema"
 )
