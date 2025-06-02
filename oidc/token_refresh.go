@@ -3,7 +3,8 @@ package oidc
 import (
 	"context"
 	"fmt"
-	"github.com/jentz/oidc-cli/internal/log"
+
+	"github.com/jentz/oidc-cli/log"
 )
 
 type TokenRefreshFlow struct {

@@ -14,6 +14,7 @@ Commands:
   client_credentials: Uses the client credentials flow to get a token response
   introspect        : Uses the introspection flow to validate a token and fetch the associated claims
   token_refresh     : Uses the token refresh flow to exchange a refresh token and obtain new tokens
+  version           : Prints the version of oidc-cli
   help              : Prints help
 
 Flags:
@@ -34,7 +35,7 @@ You can also download a suitable release for your platform from the [releases pa
 ## Run
 
 ```bash
-go run ./cmd authorization_code --authorization-url <authorization-url> --token-url <token-url> --client-id <client-id> --client-secret <client-secret> --scopes "openid profile"
+go run ./ authorization_code --authorization-url <authorization-url> --token-url <token-url> --client-id <client-id> --client-secret <client-secret> --scopes "openid profile"
 ```
 
 ## Test
@@ -46,6 +47,6 @@ go test -v ./...
 ## Build
 
 ```bash
- go build -v -o oidc-cli ./cmd
+ go build -v -o oidc-cli
 ```
 

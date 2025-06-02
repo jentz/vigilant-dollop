@@ -5,12 +5,13 @@ import (
 	"embed"
 	"errors"
 	"fmt"
-	"github.com/jentz/oidc-cli/internal/log"
 	"net"
 	"net/http"
 	"net/url"
 	"text/template"
 	"time"
+
+	"github.com/jentz/oidc-cli/log"
 )
 
 //go:embed html/*

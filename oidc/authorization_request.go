@@ -9,9 +9,10 @@ import (
 	"strings"
 	"time"
 
+	"github.com/jentz/oidc-cli/log"
+	"github.com/jentz/oidc-cli/webflow"
+
 	"github.com/gorilla/schema"
-	"github.com/jentz/oidc-cli/internal/log"
-	"github.com/jentz/oidc-cli/internal/webflow"
 )
 
 type AuthorizationRequest struct {

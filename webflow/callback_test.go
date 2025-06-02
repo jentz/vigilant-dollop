@@ -5,7 +5,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/jentz/oidc-cli/internal/log"
 	"net"
 	"net/http"
 	"net/http/httptest"
@@ -13,6 +12,8 @@ import (
 	"testing"
 	"text/template"
 	"time"
+
+	"github.com/jentz/oidc-cli/log"
 )
 
 // mockListener is a mock net.Listener for testing server startup.

@@ -1,14 +1,14 @@
-package main
+package cmd
 
 import (
 	"bytes"
 	"flag"
-	"github.com/jentz/oidc-cli/internal/log"
 
-	oidc "github.com/jentz/oidc-cli"
+	"github.com/jentz/oidc-cli/log"
+	"github.com/jentz/oidc-cli/oidc"
 )
 
-func parseGlobalFlags(name string, args []string) (oidcConf *oidc.Config, remainingArgs []string, output string, err error) {
+func ParseGlobalFlags(name string, args []string) (oidcConf *oidc.Config, remainingArgs []string, output string, err error) {
 	oidcConf = &oidc.Config{}
 
 	flags := flag.NewFlagSet(name, flag.ContinueOnError)

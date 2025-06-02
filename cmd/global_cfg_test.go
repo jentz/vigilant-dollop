@@ -1,10 +1,10 @@
-package main
+package cmd
 
 import (
 	"reflect"
 	"testing"
 
-	oidc "github.com/jentz/oidc-cli"
+	"github.com/jentz/oidc-cli/oidc"
 )
 
 func TestParseGlobalFlagsResult(t *testing.T) {
@@ -85,7 +85,7 @@ func TestParseGlobalFlagsResult(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			oidcConf, remainingArgs, output, err := parseGlobalFlags("global", tt.args)
+			oidcConf, remainingArgs, output, err := ParseGlobalFlags("global", tt.args)
 			if err != nil {
 				t.Errorf("err got %v, want nil", err)
 			}
