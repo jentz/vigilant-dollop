@@ -1,10 +1,11 @@
 package oidc
 
 import (
+	"crypto/tls"
 	"net/http"
 	"time"
 
-	"github.com/jentz/oidc-cli/transport"
+	"github.com/jentz/oidc-cli/httpclient"
 )
 
 type Client struct {
@@ -13,13 +14,19 @@ type Client struct {
 }
 
 func NewClient(config *Config) *Client {
-	httpConfig := &transport.Config{
+	httpConfig := &httpclient.Config{
 		SkipTLSVerify: config.SkipTLSVerify,
 		Timeout:       10 & time.Second,
 	}
 
 	return &Client{
 		config: config,
-		http:   transport.NewClient(httpConfig),
+		http: &http.Client{Timeout: httpConfig.Timeout,
+			Transport: &http.Transport{
+				TLSClientConfig: &tls.Config{
+					InsecureSkipVerify: httpConfig.SkipTLSVerify,
+				},
+			},
+		},
 	}
 }

@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/jentz/oidc-cli/crypto"
+	"github.com/jentz/oidc-cli/httpclient"
 )
 
 type AuthMethodValue string
@@ -57,9 +58,11 @@ type Config struct {
 }
 
 func (c *Config) DiscoverEndpoints(ctx context.Context) error {
-	client := NewClient(c)
+	client := httpclient.NewClient(&httpclient.Config{
+		SkipTLSVerify: c.SkipTLSVerify,
+	})
 
-	discoveryConfig, err := client.Discover(ctx)
+	discoveryConfig, err := c.Discover(ctx, client)
 	if err != nil {
 		return fmt.Errorf("endpoint discovery failed: %w", err)
 	}
