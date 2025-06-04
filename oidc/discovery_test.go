@@ -7,6 +7,8 @@ import (
 	"net/http"
 	"reflect"
 	"testing"
+
+	"github.com/jentz/oidc-cli/httpclient"
 )
 
 type mockTransport func(req *http.Request) (*http.Response, error)
@@ -100,12 +102,12 @@ func TestClientDiscover(t *testing.T) {
 				return tt.response, nil
 			})
 
-			client := &Client{
-				config: tt.config,
-				http:   &http.Client{Transport: transport},
-			}
+			client := httpclient.NewClient(
+				&httpclient.Config{
+					Transport: transport,
+				})
 
-			got, err := client.Discover(context.Background())
+			got, err := tt.config.Discover(context.Background(), client)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("Client.Discover() error = %v, wantErr %v", err, tt.wantErr)
 				return

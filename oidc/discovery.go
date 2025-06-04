@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
+
+	"github.com/jentz/oidc-cli/httpclient"
 )
 
 const (
@@ -27,26 +29,30 @@ type DiscoveryConfiguration struct {
 // Discover fetches OIDC configuration from the discovery endpoint
 // If wellKnownURL is provided, it will be used as the discovery endpoint
 // Otherwise, the standard discovery endpoint will be used
-func (c *Client) Discover(ctx context.Context) (*DiscoveryConfiguration, error) {
+func (c *Config) Discover(ctx context.Context, client *httpclient.Client) (*DiscoveryConfiguration, error) {
 	var discoveryURL string
-	if c.config.DiscoveryEndpoint != "" {
-		discoveryURL = c.config.DiscoveryEndpoint
+	if c.DiscoveryEndpoint != "" {
+		discoveryURL = c.DiscoveryEndpoint
 	} else {
-		discoveryURL = strings.TrimRight(c.config.IssuerURL, "/") + DiscoveryEndpoint
-	}
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, discoveryURL, nil)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create discovery request: %w", err)
+		discoveryURL = strings.TrimRight(c.IssuerURL, "/") + DiscoveryEndpoint
 	}
 
 	discoveryConfig := &DiscoveryConfiguration{}
-	err = httpRequest(c.http, req, discoveryConfig)
+	resp, err := client.Get(ctx, discoveryURL, nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to discover endpoints: %w", err)
 	}
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("discovery request failed with status %d", resp.StatusCode)
+	}
+
+	err = resp.JSON(discoveryConfig)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse discovery response: %w", err)
+	}
 
 	// Validate issuer - only if using standard discovery endpoint
-	if c.config.DiscoveryEndpoint == "" && discoveryConfig.Issuer != c.config.IssuerURL {
+	if c.DiscoveryEndpoint == "" && discoveryConfig.Issuer != c.IssuerURL {
 		return nil, ErrIssuerInvalid
 	}
 
