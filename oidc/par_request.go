@@ -8,26 +8,27 @@ import (
 	"net/url"
 	"strings"
 
+	"github.com/jentz/oidc-cli/httpclient"
 	"github.com/jentz/oidc-cli/log"
 
 	"github.com/gorilla/schema"
 )
 
 type PushedAuthorizationRequest struct {
-	ResponseType        string          `schema:"response_type"`
-	ClientID            string          `schema:"client_id"`
-	ClientSecret        string          `schema:"client_secret"`
-	RedirectURI         string          `schema:"redirect_uri"`
-	Scope               string          `schema:"scope"`
-	Prompt              string          `schema:"prompt,omitempty"`
-	AcrValues           string          `schema:"acr_values,omitempty"`
-	LoginHint           string          `schema:"login_hint,omitempty"`
-	MaxAge              string          `schema:"max_age,omitempty"`
-	UILocales           string          `schema:"ui_locales,omitempty"`
-	State               string          `schema:"state,omitempty"`
-	CodeChallengeMethod string          `schema:"code_challenge_method,omitempty"`
-	CodeChallenge       string          `schema:"code_challenge,omitempty"`
-	AuthMethod          AuthMethodValue `schema:"-"` // not part of the request
+	ResponseType        string                `schema:"response_type"`
+	ClientID            string                `schema:"client_id"`
+	ClientSecret        string                `schema:"client_secret"`
+	RedirectURI         string                `schema:"redirect_uri"`
+	Scope               string                `schema:"scope"`
+	Prompt              string                `schema:"prompt,omitempty"`
+	AcrValues           string                `schema:"acr_values,omitempty"`
+	LoginHint           string                `schema:"login_hint,omitempty"`
+	MaxAge              string                `schema:"max_age,omitempty"`
+	UILocales           string                `schema:"ui_locales,omitempty"`
+	State               string                `schema:"state,omitempty"`
+	CodeChallengeMethod string                `schema:"code_challenge_method,omitempty"`
+	CodeChallenge       string                `schema:"code_challenge,omitempty"`
+	AuthMethod          httpclient.AuthMethod `schema:"-"` // not part of the request
 }
 
 func (parReq *PushedAuthorizationRequest) Execute(ctx context.Context, pushedAuthEndpoint string, httpClient *http.Client, customArgs ...string) (parResp *PushedAuthorizationResponse, err error) {
@@ -50,7 +51,7 @@ func (parReq *PushedAuthorizationRequest) Execute(ctx context.Context, pushedAut
 		body.Set(kv[0], kv[1])
 	}
 
-	if parReq.AuthMethod == AuthMethodClientSecretBasic {
+	if parReq.AuthMethod == httpclient.AuthMethodBasic {
 		body.Del("client_id")
 		body.Del("client_secret")
 	}
@@ -74,7 +75,7 @@ func (parReq *PushedAuthorizationRequest) Execute(ctx context.Context, pushedAut
 	}
 	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 
-	if parReq.AuthMethod == AuthMethodClientSecretBasic {
+	if parReq.AuthMethod == httpclient.AuthMethodBasic {
 		req.SetBasicAuth(parReq.ClientID, parReq.ClientSecret)
 	}
 

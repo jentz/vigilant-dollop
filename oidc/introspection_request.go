@@ -10,19 +10,20 @@ import (
 	"net/url"
 	"strings"
 
+	"github.com/jentz/oidc-cli/httpclient"
 	"github.com/jentz/oidc-cli/log"
 
 	"github.com/gorilla/schema"
 )
 
 type IntrospectionRequest struct {
-	Token          string          `schema:"token"`
-	TokenTypeHint  string          `schema:"token_type_hint"`
-	ClientID       string          `schema:"client_id"`
-	ClientSecret   string          `schema:"client_secret"`
-	BearerToken    string          `schema:"-"` // not part of the request
-	ResponseFormat string          `schema:"-"` // not part of the request
-	AuthMethod     AuthMethodValue `schema:"-"` // not part of the request
+	Token          string                `schema:"token"`
+	TokenTypeHint  string                `schema:"token_type_hint"`
+	ClientID       string                `schema:"client_id"`
+	ClientSecret   string                `schema:"client_secret"`
+	BearerToken    string                `schema:"-"` // not part of the request
+	ResponseFormat string                `schema:"-"` // not part of the request
+	AuthMethod     httpclient.AuthMethod `schema:"-"` // not part of the request
 }
 
 func (tReq *IntrospectionRequest) Execute(ctx context.Context, introspectionEndpoint string, httpClient *http.Client) (tResp *IntrospectionResponse, err error) {
@@ -33,7 +34,7 @@ func (tReq *IntrospectionRequest) Execute(ctx context.Context, introspectionEndp
 		return nil, err
 	}
 
-	if tReq.AuthMethod == AuthMethodClientSecretBasic {
+	if tReq.AuthMethod == httpclient.AuthMethodBasic {
 		body.Del("client_id")
 		body.Del("client_secret")
 	}
@@ -57,7 +58,7 @@ func (tReq *IntrospectionRequest) Execute(ctx context.Context, introspectionEndp
 		return nil, err
 	}
 
-	if tReq.AuthMethod == AuthMethodClientSecretBasic {
+	if tReq.AuthMethod == httpclient.AuthMethodBasic {
 		req.SetBasicAuth(tReq.ClientID, tReq.ClientSecret)
 	}
 

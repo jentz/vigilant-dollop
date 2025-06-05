@@ -4,28 +4,16 @@ import (
 	"crypto/rand"
 	"crypto/sha256"
 	"encoding/base64"
-	"math/big"
+	"fmt"
 )
 
-func RandomInt(minVal int, maxVal int) int {
-	nBig, err := rand.Int(rand.Reader, big.NewInt(int64(maxVal-minVal)))
-	if err != nil {
-		panic(err)
-	}
-	return int(nBig.Int64()) + minVal
-}
-
-func GeneratePKCECodeVerifier(n int) string {
-	if n < 32 || n > 96 {
-		panic("Code verifier length before base64 encoding must be between 32 and 96 bytes")
-	}
-	b := make([]byte, n)
+func GeneratePKCECodeVerifier() (string, error) {
+	b := make([]byte, 96) // 96 bytes is the maximum length for a code verifier
 	_, err := rand.Read(b)
 	if err != nil {
-		panic(err)
+		return "", fmt.Errorf("failed to read from random to generate PKCE code verifier %w", err)
 	}
-	// NoPadding is used to avoid '=' padding characters which are not accepted by the authorization server in the code_verifier parameter
-	return base64.URLEncoding.WithPadding(base64.NoPadding).EncodeToString(b)
+	return base64.RawURLEncoding.EncodeToString(b), nil
 }
 
 func GeneratePKCECodeChallenge(codeVerifier string) string {
