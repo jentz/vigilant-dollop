@@ -2,9 +2,12 @@ package oidc
 
 import (
 	"context"
+	"encoding/json"
+	"errors"
 	"fmt"
 
 	"github.com/jentz/oidc-cli/crypto"
+	"github.com/jentz/oidc-cli/httpclient"
 	"github.com/jentz/oidc-cli/log"
 )
 
@@ -36,6 +39,9 @@ func (c *AuthorizationCodeFlow) Run(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("failed to discover endpoints: %w", err)
 	}
+	if c.FlowConfig.PKCE && c.Config.ClientSecret == "" {
+		c.Config.AuthMethod = httpclient.AuthMethodNone
+	}
 
 	err = c.Config.ReadKeyFiles()
 	if err != nil {
@@ -61,8 +67,10 @@ func (c *AuthorizationCodeFlow) Run(ctx context.Context) error {
 			AuthMethod:   c.Config.AuthMethod,
 		}
 		if c.FlowConfig.PKCE {
-			// Starting with a byte array of 31-96 bytes ensures that the base64 encoded string will be between 43 and 128 characters long as required by RFC7636
-			codeVerifier = crypto.GeneratePKCECodeVerifier(crypto.RandomInt(32, 96))
+			codeVerifier, err = crypto.GeneratePKCECodeVerifier()
+			if err != nil {
+				return fmt.Errorf("failed to generate PKCE code verifier: %w", err)
+			}
 			parReq.CodeChallenge = crypto.GeneratePKCECodeChallenge(codeVerifier)
 			parReq.CodeChallengeMethod = "S256"
 		}
@@ -90,7 +98,10 @@ func (c *AuthorizationCodeFlow) Run(ctx context.Context) error {
 		}
 		if c.FlowConfig.PKCE {
 			// Starting with a byte array of 31-96 bytes ensures that the base64 encoded string will be between 43 and 128 characters long as required by RFC7636
-			codeVerifier = crypto.GeneratePKCECodeVerifier(crypto.RandomInt(32, 96))
+			codeVerifier, err = crypto.GeneratePKCECodeVerifier()
+			if err != nil {
+				return fmt.Errorf("failed to generate PKCE code verifier: %w", err)
+			}
 			aReq.CodeChallenge = crypto.GeneratePKCECodeChallenge(codeVerifier)
 			aReq.CodeChallengeMethod = "S256"
 		}
@@ -101,16 +112,7 @@ func (c *AuthorizationCodeFlow) Run(ctx context.Context) error {
 		return err
 	}
 
-	tReq := TokenRequest{
-		GrantType:    "authorization_code",
-		ClientID:     c.Config.ClientID,
-		ClientSecret: c.Config.ClientSecret,
-		AuthMethod:   c.Config.AuthMethod,
-		RedirectURI:  c.FlowConfig.CallbackURI,
-		CodeVerifier: codeVerifier,
-		Code:         aResp.Code,
-	}
-
+	headers := make(map[string]string)
 	if c.FlowConfig.DPoP {
 		dpopProof, err := crypto.NewDPoPProof(
 			c.Config.PublicKey,
@@ -120,19 +122,39 @@ func (c *AuthorizationCodeFlow) Run(ctx context.Context) error {
 		if err != nil {
 			return err
 		}
-		tReq.DPoPHeader = dpopProof.String()
+		headers["DPoP"] = dpopProof.String()
 	}
 
-	tResp, err := tReq.Execute(ctx, c.Config.TokenEndpoint, c.client.http)
+	tokenRequest := httpclient.CreateAuthCodeTokenRequest(
+		c.Config.ClientID,
+		c.Config.ClientSecret,
+		c.Config.AuthMethod,
+		aResp.Code,
+		c.FlowConfig.CallbackURI,
+		codeVerifier)
+	httpClient := c.Config.Client()
+
+	resp, err := httpClient.ExecuteTokenRequest(ctx, c.Config.TokenEndpoint, tokenRequest, headers)
 	if err != nil {
-		return err
+		return fmt.Errorf("token request failed: %w", err)
 	}
 
-	jsonStr, err := tResp.JSON()
+	tokenData, err := httpclient.ParseTokenResponse(resp)
 	if err != nil {
-		return err
+		if errors.Is(err, httpclient.ErrParsingJSON) {
+			return fmt.Errorf("invalid JSON response: %w", err)
+		} else if errors.Is(err, httpclient.ErrOAuthError) {
+			return fmt.Errorf("authorization server rejected request: %w", err)
+		} else if errors.Is(err, httpclient.ErrHTTPFailure) {
+			return fmt.Errorf("HTTP request failed: %w", err)
+		}
+		return fmt.Errorf("token error: %w", err)
 	}
 
-	log.Outputf(jsonStr + "\n")
+	// Print available response data
+	if tokenData != nil {
+		prettyJSON, _ := json.MarshalIndent(tokenData, "", "  ")
+		log.Outputf("%s\n", string(prettyJSON))
+	}
 	return nil
 }

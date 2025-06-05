@@ -8,36 +8,6 @@ import (
 	"github.com/jentz/oidc-cli/httpclient"
 )
 
-type AuthMethodValue string
-
-const (
-	AuthMethodClientSecretBasic AuthMethodValue = "client_secret_basic"
-	AuthMethodClientSecretPost  AuthMethodValue = "client_secret_post"
-)
-
-var validAuthMethods = map[AuthMethodValue]bool{
-	AuthMethodClientSecretBasic: true,
-	AuthMethodClientSecretPost:  true,
-}
-
-func (a *AuthMethodValue) Set(value string) error {
-	methodValue := AuthMethodValue(value)
-	if !methodValue.IsValid() {
-		return fmt.Errorf("invalid auth method %q, valid values are: %s, %s",
-			value, AuthMethodClientSecretBasic, AuthMethodClientSecretPost)
-	}
-	*a = methodValue
-	return nil
-}
-
-func (a *AuthMethodValue) String() string {
-	return string(*a)
-}
-
-func (a *AuthMethodValue) IsValid() bool {
-	return validAuthMethods[*a]
-}
-
 type Config struct {
 	ClientID                           string
 	ClientSecret                       string
@@ -50,17 +20,25 @@ type Config struct {
 	UserinfoEndpoint                   string
 	JWKSEndpoint                       string
 	SkipTLSVerify                      bool
-	AuthMethod                         AuthMethodValue
+	AuthMethod                         httpclient.AuthMethod
 	PrivateKeyFile                     string
 	PublicKeyFile                      string
 	PrivateKey                         any
 	PublicKey                          any
+	client                             *httpclient.Client
+}
+
+func (c *Config) Client() *httpclient.Client {
+	if c.client == nil {
+		c.client = httpclient.NewClient(&httpclient.Config{
+			SkipTLSVerify: c.SkipTLSVerify,
+		})
+	}
+	return c.client
 }
 
 func (c *Config) DiscoverEndpoints(ctx context.Context) error {
-	client := httpclient.NewClient(&httpclient.Config{
-		SkipTLSVerify: c.SkipTLSVerify,
-	})
+	client := c.Client()
 
 	discoveryConfig, err := c.Discover(ctx, client)
 	if err != nil {
@@ -95,7 +73,7 @@ func (c *Config) DiscoverEndpoints(ctx context.Context) error {
 	// set default auth method if not set by user
 	if c.AuthMethod == "" {
 		for _, method := range discoveryConfig.TokenEndpointAuthMethods {
-			authMethodValue := AuthMethodValue(method)
+			authMethodValue := httpclient.AuthMethod(method)
 			if authMethodValue.IsValid() {
 				c.AuthMethod = authMethodValue
 				break
