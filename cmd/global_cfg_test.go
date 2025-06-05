@@ -92,8 +92,12 @@ func TestParseGlobalFlagsResult(t *testing.T) {
 			if output != "" {
 				t.Errorf("output got %q, want empty", output)
 			}
-			if !reflect.DeepEqual(*oidcConf, tt.oidcConf) {
-				t.Errorf("Config got %+v, want %+v", *oidcConf, tt.oidcConf)
+
+			gotConf := *oidcConf
+			gotConf.Client = nil // Ignore client in comparison
+
+			if !reflect.DeepEqual(gotConf, tt.oidcConf) {
+				t.Errorf("Config got %+v, want %+v", gotConf, tt.oidcConf)
 			}
 			if !reflect.DeepEqual(remainingArgs, tt.remainingArgs) {
 				t.Errorf("remainingArgs got %v, want %v", remainingArgs, tt.remainingArgs)

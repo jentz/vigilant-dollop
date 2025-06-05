@@ -21,12 +21,7 @@ type TokenRefreshFlowConfig struct {
 }
 
 func (c *TokenRefreshFlow) Run(ctx context.Context) error {
-	client := c.Config.Client()
-
-	err := c.Config.DiscoverEndpoints(ctx)
-	if err != nil {
-		return fmt.Errorf("failed to discover endpoints: %w", err)
-	}
+	client := c.Config.Client
 
 	req := httpclient.CreateRefreshTokenRequest(c.Config.ClientID, c.Config.ClientSecret, c.Config.AuthMethod, c.FlowConfig.RefreshToken, c.FlowConfig.Scopes)
 
