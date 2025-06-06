@@ -33,67 +33,77 @@ type AuthorizationCodeResponse struct {
 	State string
 }
 
-// CreateAuthorizationCodeRequestURI builds the authorization request URI.
-func CreateAuthorizationCodeRequestURI(endpoint string, req *AuthorizationCodeRequest) (string, error) {
-	u, err := url.Parse(endpoint)
-	if err != nil {
-		return "", fmt.Errorf("failed to parse endpoint: %w", err)
-	}
-	q := u.Query()
-	q.Set("response_type", "code")
+// CreateAuthorizationCodeRequestValues builds the authorization request URI.
+func CreateAuthorizationCodeRequestValues(req *AuthorizationCodeRequest) (*url.Values, error) {
+	values := &url.Values{}
+	values.Set("response_type", "code")
 
 	// Add required parameters
 	if req.ClientID != "" {
 		if req.ClientID == "" {
-			return "", errors.New("client_id is required")
+			return nil, errors.New("client_id is required")
 		}
 	}
-	q.Set("client_id", req.ClientID)
+	values.Set("client_id", req.ClientID)
 
 	// Add standard params if set
 	if req.State != "" {
-		q.Set("state", req.State)
+		values.Set("state", req.State)
 	}
 	if req.RedirectURI != "" {
-		q.Set("redirect_uri", req.RedirectURI)
+		values.Set("redirect_uri", req.RedirectURI)
 	}
 	if req.Scope != "" {
-		q.Set("scope", req.Scope)
+		values.Set("scope", req.Scope)
 	}
 	if req.Prompt != "" {
-		q.Set("prompt", req.Prompt)
+		values.Set("prompt", req.Prompt)
 	}
 	if req.AcrValues != "" {
-		q.Set("acr_values", req.AcrValues)
+		values.Set("acr_values", req.AcrValues)
 	}
 	if req.LoginHint != "" {
-		q.Set("login_hint", req.LoginHint)
+		values.Set("login_hint", req.LoginHint)
 	}
 	if req.MaxAge != "" {
-		q.Set("max_age", req.MaxAge)
+		values.Set("max_age", req.MaxAge)
 	}
 	if req.UILocales != "" {
-		q.Set("ui_locales", req.UILocales)
+		values.Set("ui_locales", req.UILocales)
 	}
 	if req.CodeChallengeMethod != "" {
-		q.Set("code_challenge_method", req.CodeChallengeMethod)
+		values.Set("code_challenge_method", req.CodeChallengeMethod)
 	}
 	if req.CodeChallenge != "" {
-		q.Set("code_challenge", req.CodeChallenge)
+		values.Set("code_challenge", req.CodeChallenge)
 	}
 	if req.RequestURI != "" {
-		q.Set("request_uri", req.RequestURI)
+		values.Set("request_uri", req.RequestURI)
 	}
 
 	// Add custom args
 	if req.CustomArgs != nil {
 		for k, v := range *req.CustomArgs {
-			q.Set(k, v)
+			values.Set(k, v)
 		}
 	}
 
-	u.RawQuery = q.Encode()
-	return u.String(), nil
+	return values, nil
+}
+
+func CreateAuthorizationCodeRequestURL(endpoint string, values *url.Values) (string, error) {
+	if endpoint == "" {
+		return "", errors.New("endpoint is required")
+	}
+	if values == nil {
+		return "", errors.New("values cannot be nil")
+	}
+	endpointURL, err := url.Parse(endpoint)
+	if err != nil {
+		return "", fmt.Errorf("failed to parse endpoint URL: %w", err)
+	}
+	endpointURL.RawQuery = values.Encode()
+	return endpointURL.String(), nil
 }
 
 // ExecuteAuthorizationCodeRequest executes the authorization code request and returns the auth code response.
@@ -123,20 +133,21 @@ func (c *Client) ExecuteAuthorizationCodeRequest(ctx context.Context, endpoint s
 		// Server started successfully
 	}
 
-	authURI, err := url.Parse(endpoint)
+	requestValues, err := CreateAuthorizationCodeRequestValues(req)
 	if err != nil {
-		return nil, fmt.Errorf("failed to parse auth endpoint: %w", err)
+		return nil, fmt.Errorf("failed to create authorization request values: %w", err)
 	}
-	requestURI, err := CreateAuthorizationCodeRequestURI(authURI.String(), req)
+
+	requestURL, err := CreateAuthorizationCodeRequestURL(endpoint, requestValues)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create authorization request URI: %w", err)
+		return nil, fmt.Errorf("failed to create authorization request URL: %w", err)
 	}
-	log.Printf("authorization request: %s\n", requestURI)
+	log.Printf("authorization request: %s\n", requestURL)
 
 	browser := webflow.NewBrowser()
-	err = browser.Open(requestURI)
+	err = browser.Open(requestURL)
 	if err != nil {
-		log.Errorf("unable to open browser because %v, visit %s to continue\n", err, requestURI)
+		log.Errorf("unable to open browser because %v, visit %s to continue\n", err, requestURL)
 	}
 
 	callbackResp, err := callbackServer.WaitForCallback(ctx)
