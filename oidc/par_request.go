@@ -4,6 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
+	"io"
 	"net/http"
 	"net/url"
 	"strings"
@@ -53,6 +55,7 @@ func (parReq *PushedAuthorizationRequest) Execute(ctx context.Context, pushedAut
 	}
 
 	if parReq.AuthMethod == httpclient.AuthMethodBasic {
+		log.Printf("using basic auth for pushed authorization request\n")
 		body.Del("client_id")
 		body.Del("client_secret")
 	}
@@ -93,6 +96,14 @@ func (parReq *PushedAuthorizationRequest) Execute(ctx context.Context, pushedAut
 	}()
 
 	log.Printf("pushed auth response status: %s\n", resp.Status)
+	// TODO: this will all get cleaned up in the refactor
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		bodyBytes, readErr := io.ReadAll(resp.Body)
+		if readErr != nil {
+			return nil, errors.New("error reading pushed authorization response body")
+		}
+		return nil, fmt.Errorf("pushed authorization request failed with status %s: %s", resp.Status, string(bodyBytes))
+	}
 
 	dec := json.NewDecoder(resp.Body)
 	err = dec.Decode(&parResp)
