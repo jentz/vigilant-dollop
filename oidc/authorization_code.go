@@ -41,7 +41,7 @@ func (c *AuthorizationCodeFlow) Run(ctx context.Context) error {
 
 	var aReq *httpclient.AuthorizationCodeRequest
 	var codeVerifier string
-
+	var err error
 	if c.FlowConfig.PAR {
 		parReq := PushedAuthorizationRequest{
 			ResponseType: "code",
@@ -58,7 +58,7 @@ func (c *AuthorizationCodeFlow) Run(ctx context.Context) error {
 			AuthMethod:   c.Config.AuthMethod,
 		}
 		if c.FlowConfig.PKCE {
-			codeVerifier, err := crypto.GeneratePKCECodeVerifier()
+			codeVerifier, err = crypto.GeneratePKCECodeVerifier()
 			if err != nil {
 				return fmt.Errorf("failed to generate PKCE code verifier: %w", err)
 			}
@@ -88,7 +88,7 @@ func (c *AuthorizationCodeFlow) Run(ctx context.Context) error {
 			CustomArgs:  c.FlowConfig.CustomArgs,
 		}
 		if c.FlowConfig.PKCE {
-			codeVerifier, err := crypto.GeneratePKCECodeVerifier()
+			codeVerifier, err = crypto.GeneratePKCECodeVerifier()
 			if err != nil {
 				return fmt.Errorf("failed to generate PKCE code verifier: %w", err)
 			}
