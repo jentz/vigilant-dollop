@@ -14,7 +14,6 @@ import (
 type AuthorizationCodeFlow struct {
 	Config     *Config
 	FlowConfig *AuthorizationCodeFlowConfig
-	client     *Client
 }
 
 type AuthorizationCodeFlowConfig struct {
@@ -33,72 +32,62 @@ type AuthorizationCodeFlowConfig struct {
 }
 
 func (c *AuthorizationCodeFlow) Run(ctx context.Context) error {
-	c.client = NewClient(c.Config)
+	client := c.Config.Client
 
 	if c.FlowConfig.PKCE && c.Config.ClientSecret == "" {
 		c.Config.AuthMethod = httpclient.AuthMethodNone
 	}
 
-	var aReq *httpclient.AuthorizationCodeRequest
-	var codeVerifier string
-	var err error
-	if c.FlowConfig.PAR {
-		parReq := PushedAuthorizationRequest{
-			ResponseType: "code",
-			ClientID:     c.Config.ClientID,
-			ClientSecret: c.Config.ClientSecret,
-			Scope:        c.FlowConfig.Scopes,
-			RedirectURI:  c.FlowConfig.CallbackURI,
-			Prompt:       c.FlowConfig.Prompt,
-			AcrValues:    c.FlowConfig.AcrValues,
-			LoginHint:    c.FlowConfig.LoginHint,
-			MaxAge:       c.FlowConfig.MaxAge,
-			UILocales:    c.FlowConfig.UILocales,
-			State:        c.FlowConfig.State,
-			AuthMethod:   c.Config.AuthMethod,
-		}
-		if c.FlowConfig.PKCE {
-			codeVerifier, err = crypto.GeneratePKCECodeVerifier()
-			if err != nil {
-				return fmt.Errorf("failed to generate PKCE code verifier: %w", err)
-			}
-			parReq.CodeChallenge = crypto.GeneratePKCECodeChallenge(codeVerifier)
-			parReq.CodeChallengeMethod = "S256"
-		}
-		parResp, err := parReq.Execute(ctx, c.Config.PushedAuthorizationRequestEndpoint, c.client.http, c.FlowConfig.CustomArgs)
-		if err != nil {
-			return err
-		}
-		aReq = &httpclient.AuthorizationCodeRequest{
-			ClientID:   c.Config.ClientID,
-			RequestURI: parResp.RequestURI,
-		}
-	} else {
-		// regular authorization code flow
-		aReq = &httpclient.AuthorizationCodeRequest{
-			ClientID:    c.Config.ClientID,
-			Scope:       c.FlowConfig.Scopes,
-			RedirectURI: c.FlowConfig.CallbackURI,
-			Prompt:      c.FlowConfig.Prompt,
-			AcrValues:   c.FlowConfig.AcrValues,
-			LoginHint:   c.FlowConfig.LoginHint,
-			MaxAge:      c.FlowConfig.MaxAge,
-			UILocales:   c.FlowConfig.UILocales,
-			State:       c.FlowConfig.State,
-			CustomArgs:  c.FlowConfig.CustomArgs,
-		}
-		if c.FlowConfig.PKCE {
-			codeVerifier, err = crypto.GeneratePKCECodeVerifier()
-			if err != nil {
-				return fmt.Errorf("failed to generate PKCE code verifier: %w", err)
-			}
-			aReq.CodeChallenge = crypto.GeneratePKCECodeChallenge(codeVerifier)
-			aReq.CodeChallengeMethod = "S256"
-		}
+	authCodeReq := &httpclient.AuthorizationCodeRequest{
+		ClientID:    c.Config.ClientID,
+		Scope:       c.FlowConfig.Scopes,
+		RedirectURI: c.FlowConfig.CallbackURI,
+		Prompt:      c.FlowConfig.Prompt,
+		AcrValues:   c.FlowConfig.AcrValues,
+		LoginHint:   c.FlowConfig.LoginHint,
+		MaxAge:      c.FlowConfig.MaxAge,
+		UILocales:   c.FlowConfig.UILocales,
+		State:       c.FlowConfig.State,
+		CustomArgs:  c.FlowConfig.CustomArgs,
 	}
 
-	httpClient := c.Config.Client
-	aResp, err := httpClient.ExecuteAuthorizationCodeRequest(ctx, c.Config.AuthorizationEndpoint, c.FlowConfig.CallbackURI, aReq)
+	var codeVerifier string
+	var err error
+	if c.FlowConfig.PKCE {
+		codeVerifier, err = crypto.GeneratePKCECodeVerifier()
+		if err != nil {
+			return fmt.Errorf("failed to generate PKCE code verifier: %w", err)
+		}
+		authCodeReq.CodeChallenge = crypto.GeneratePKCECodeChallenge(codeVerifier)
+		authCodeReq.CodeChallengeMethod = "S256"
+	}
+
+	if c.FlowConfig.PAR {
+		parReq := &httpclient.PushedAuthorizationRequest{
+			ClientID:     c.Config.ClientID,
+			ClientSecret: c.Config.ClientSecret,
+			AuthMethod:   c.Config.AuthMethod,
+		}
+
+		requestParams, err := httpclient.CreateAuthorizationCodeRequestValues(authCodeReq)
+		parReq.Params = requestParams
+		if err != nil {
+			return fmt.Errorf("failed to create authorization code request values: %w", err)
+		}
+		resp, err := client.ExecutePushedAuthorizationRequest(ctx, c.Config.PushedAuthorizationRequestEndpoint, parReq)
+		if err != nil {
+			return fmt.Errorf("pushed authorization request failed: %w", err)
+		}
+		parResp, err := httpclient.ParsePushedAuthorizationResponse(resp)
+		if err != nil {
+			return c.wrapError(err, "pushed authorization")
+		}
+
+		// Use the request URI from the PAR response
+		authCodeReq.RequestURI = parResp.RequestURI
+	}
+
+	aResp, err := client.ExecuteAuthorizationCodeRequest(ctx, c.Config.AuthorizationEndpoint, c.FlowConfig.CallbackURI, authCodeReq)
 	if err != nil {
 		return fmt.Errorf("authorization request failed: %w", err)
 	}
@@ -124,21 +113,14 @@ func (c *AuthorizationCodeFlow) Run(ctx context.Context) error {
 		c.FlowConfig.CallbackURI,
 		codeVerifier)
 
-	resp, err := httpClient.ExecuteTokenRequest(ctx, c.Config.TokenEndpoint, tokenRequest, headers)
+	resp, err := client.ExecuteTokenRequest(ctx, c.Config.TokenEndpoint, tokenRequest, headers)
 	if err != nil {
 		return fmt.Errorf("token request failed: %w", err)
 	}
 
 	tokenData, err := httpclient.ParseTokenResponse(resp)
 	if err != nil {
-		if errors.Is(err, httpclient.ErrParsingJSON) {
-			return fmt.Errorf("invalid JSON response: %w", err)
-		} else if errors.Is(err, httpclient.ErrOAuthError) {
-			return fmt.Errorf("authorization server rejected request: %w", err)
-		} else if errors.Is(err, httpclient.ErrHTTPFailure) {
-			return fmt.Errorf("HTTP request failed: %w", err)
-		}
-		return fmt.Errorf("token error: %w", err)
+		return c.wrapError(err, "token")
 	}
 
 	// Print available response data
@@ -147,4 +129,17 @@ func (c *AuthorizationCodeFlow) Run(ctx context.Context) error {
 		log.Outputf("%s\n", string(prettyJSON))
 	}
 	return nil
+}
+
+func (c *AuthorizationCodeFlow) wrapError(err error, context string) error {
+	switch {
+	case errors.Is(err, httpclient.ErrParsingJSON):
+		return fmt.Errorf("invalid JSON response in %s: %w", context, err)
+	case errors.Is(err, httpclient.ErrOAuthError):
+		return fmt.Errorf("authorization server rejected %s request: %w", context, err)
+	case errors.Is(err, httpclient.ErrHTTPFailure):
+		return fmt.Errorf("HTTP request failed in %s: %w", context, err)
+	default:
+		return fmt.Errorf("%s error: %w", context, err)
+	}
 }

@@ -46,9 +46,6 @@ func (c *Client) ExecuteTokenRequest(ctx context.Context, tokenEndpoint string, 
 		req.Params.Set("client_id", req.ClientID)
 	}
 
-	// Add custom headers
-	headers["Content-Type"] = "application/x-www-form-urlencoded"
-
 	// Execute the request
 	return c.PostForm(ctx, tokenEndpoint, req.Params, headers)
 }
