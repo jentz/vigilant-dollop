@@ -8,13 +8,13 @@ import (
 	"github.com/jentz/oidc-cli/oidc"
 )
 
-type CustomArgsValue []string
+type CustomArgsFlag []string
 
-func (c *CustomArgsValue) String() string {
+func (c *CustomArgsFlag) String() string {
 	return ""
 }
 
-func (c *CustomArgsValue) Set(value string) error {
+func (c *CustomArgsFlag) Set(value string) error {
 	*c = append(*c, value)
 	return nil
 }
@@ -44,7 +44,7 @@ func parseAuthorizationCodeFlags(name string, args []string, oidcConf *oidc.Conf
 	flags.StringVar(&flowConf.MaxAge, "max-age", "", "set max_age parameter")
 	flags.StringVar(&flowConf.UILocales, "ui-locales", "", "set ui_locales parameter")
 	flags.StringVar(&flowConf.State, "state", "", "set state parameter")
-	var customArgs CustomArgsValue
+	var customArgs CustomArgsFlag
 	flags.Var(&customArgs, "custom", "custom authorization parameters, argument can be given multiple times")
 	flags.BoolVar(&flowConf.PKCE, "pkce", false, "use proof-key for code exchange (PKCE)")
 	flags.BoolVar(&flowConf.PAR, "par", false, "use pushed authorization requests")

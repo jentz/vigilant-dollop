@@ -39,10 +39,8 @@ func CreateAuthorizationCodeRequestValues(req *AuthorizationCodeRequest) (*url.V
 	values.Set("response_type", "code")
 
 	// Add required parameters
-	if req.ClientID != "" {
-		if req.ClientID == "" {
-			return nil, errors.New("client_id is required")
-		}
+	if req.ClientID == "" {
+		return nil, errors.New("client_id is required")
 	}
 	values.Set("client_id", req.ClientID)
 
