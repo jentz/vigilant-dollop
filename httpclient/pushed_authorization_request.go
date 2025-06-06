@@ -16,8 +16,8 @@ type PushedAuthorizationRequest struct {
 }
 
 type PushedAuthorizationResponse struct {
-	RequestURI string
-	ExpiresIn  int
+	RequestURI string `json:"request_uri"`
+	ExpiresIn  int    `json:"expires_in"`
 }
 
 func (c *Client) ExecutePushedAuthorizationRequest(ctx context.Context, endpoint string, req *PushedAuthorizationRequest) (*Response, error) {
@@ -45,17 +45,17 @@ func (c *Client) ExecutePushedAuthorizationRequest(ctx context.Context, endpoint
 }
 
 func ParsePushedAuthorizationResponse(resp *Response) (*PushedAuthorizationResponse, error) {
-	var mapResp map[string]interface{}
-
-	if err := json.Unmarshal(resp.Body, &mapResp); err != nil {
-		return nil, fmt.Errorf("%w: %v", ErrParsingJSON, err)
-	}
-
 	if !resp.IsSuccess() {
 		oauth2Err := &OAuth2Error{
 			StatusCode: resp.StatusCode,
 			RawBody:    resp.String(),
 		}
+		var mapResp map[string]interface{}
+
+		if err := json.Unmarshal(resp.Body, &mapResp); err != nil {
+			return nil, fmt.Errorf("%w: %v", ErrParsingJSON, err)
+		}
+
 		// Extract standard OAuth2 error fields if present
 		if errStr, ok := mapResp["error"].(string); ok {
 			oauth2Err.ErrorType = errStr
@@ -68,8 +68,9 @@ func ParsePushedAuthorizationResponse(resp *Response) (*PushedAuthorizationRespo
 		return nil, fmt.Errorf("%w: %v", ErrHTTPFailure, oauth2Err)
 	}
 
-	return &PushedAuthorizationResponse{
-		RequestURI: mapResp["request_uri"].(string),
-		ExpiresIn:  int(mapResp["expires_in"].(float64)), // JSON numbers are float64
-	}, nil
+	var parResp PushedAuthorizationResponse
+	if err := json.Unmarshal(resp.Body, &parResp); err != nil {
+		return nil, fmt.Errorf("%w: %v", ErrParsingJSON, err)
+	}
+	return &parResp, nil
 }
