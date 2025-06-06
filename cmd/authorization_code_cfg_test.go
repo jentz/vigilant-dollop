@@ -4,6 +4,7 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/jentz/oidc-cli/httpclient"
 	"github.com/jentz/oidc-cli/oidc"
 )
 
@@ -60,10 +61,13 @@ func TestParseAuthorizationCodeFlagsResult(t *testing.T) {
 				MaxAge:      "max_age",
 				UILocales:   "ui_locales",
 				State:       "state",
-				CustomArgs:  oidc.CustomArgs{"custom1=value1", "custom2=value2"},
-				PKCE:        true,
-				PAR:         true,
-				DPoP:        true,
+				CustomArgs: &httpclient.CustomArgs{
+					"custom1": "value1",
+					"custom2": "value2",
+				},
+				PKCE: true,
+				PAR:  true,
+				DPoP: true,
 			},
 		},
 		{

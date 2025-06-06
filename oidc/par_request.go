@@ -4,6 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
+	"io"
 	"net/http"
 	"net/url"
 	"strings"
@@ -31,7 +33,7 @@ type PushedAuthorizationRequest struct {
 	AuthMethod          httpclient.AuthMethod `schema:"-"` // not part of the request
 }
 
-func (parReq *PushedAuthorizationRequest) Execute(ctx context.Context, pushedAuthEndpoint string, httpClient *http.Client, customArgs ...string) (parResp *PushedAuthorizationResponse, err error) {
+func (parReq *PushedAuthorizationRequest) Execute(ctx context.Context, pushedAuthEndpoint string, httpClient *http.Client, customArgs *httpclient.CustomArgs) (parResp *PushedAuthorizationResponse, err error) {
 	_, err = url.Parse(parReq.RedirectURI)
 	if err != nil {
 		log.Printf("unable to parse redirect uri %s because %v\n", parReq.RedirectURI, err)
@@ -46,12 +48,14 @@ func (parReq *PushedAuthorizationRequest) Execute(ctx context.Context, pushedAut
 	}
 
 	// Add custom args to the request
-	for _, arg := range customArgs {
-		kv := strings.SplitN(arg, "=", 2)
-		body.Set(kv[0], kv[1])
+	if customArgs != nil {
+		for k, v := range *customArgs {
+			body.Set(k, v)
+		}
 	}
 
 	if parReq.AuthMethod == httpclient.AuthMethodBasic {
+		log.Printf("using basic auth for pushed authorization request\n")
 		body.Del("client_id")
 		body.Del("client_secret")
 	}
@@ -92,6 +96,14 @@ func (parReq *PushedAuthorizationRequest) Execute(ctx context.Context, pushedAut
 	}()
 
 	log.Printf("pushed auth response status: %s\n", resp.Status)
+	// TODO: this will all get cleaned up in the refactor
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		bodyBytes, readErr := io.ReadAll(resp.Body)
+		if readErr != nil {
+			return nil, errors.New("error reading pushed authorization response body")
+		}
+		return nil, fmt.Errorf("pushed authorization request failed with status %s: %s", resp.Status, string(bodyBytes))
+	}
 
 	dec := json.NewDecoder(resp.Body)
 	err = dec.Decode(&parResp)

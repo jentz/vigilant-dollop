@@ -26,8 +26,8 @@ type AuthorizationCodeFlowConfig struct {
 	MaxAge      string
 	UILocales   string
 	State       string
+	CustomArgs  *httpclient.CustomArgs
 	PKCE        bool
-	CustomArgs  CustomArgs
 	PAR         bool
 	DPoP        bool
 }
@@ -39,9 +39,9 @@ func (c *AuthorizationCodeFlow) Run(ctx context.Context) error {
 		c.Config.AuthMethod = httpclient.AuthMethodNone
 	}
 
-	aReq := AuthorizationRequest{}
+	var aReq *httpclient.AuthorizationCodeRequest
 	var codeVerifier string
-
+	var err error
 	if c.FlowConfig.PAR {
 		parReq := PushedAuthorizationRequest{
 			ResponseType: "code",
@@ -58,38 +58,37 @@ func (c *AuthorizationCodeFlow) Run(ctx context.Context) error {
 			AuthMethod:   c.Config.AuthMethod,
 		}
 		if c.FlowConfig.PKCE {
-			codeVerifier, err := crypto.GeneratePKCECodeVerifier()
+			codeVerifier, err = crypto.GeneratePKCECodeVerifier()
 			if err != nil {
 				return fmt.Errorf("failed to generate PKCE code verifier: %w", err)
 			}
 			parReq.CodeChallenge = crypto.GeneratePKCECodeChallenge(codeVerifier)
 			parReq.CodeChallengeMethod = "S256"
 		}
-		parResp, err := parReq.Execute(ctx, c.Config.PushedAuthorizationRequestEndpoint, c.client.http, c.FlowConfig.CustomArgs...)
+		parResp, err := parReq.Execute(ctx, c.Config.PushedAuthorizationRequestEndpoint, c.client.http, c.FlowConfig.CustomArgs)
 		if err != nil {
 			return err
 		}
-		aReq = AuthorizationRequest{
+		aReq = &httpclient.AuthorizationCodeRequest{
 			ClientID:   c.Config.ClientID,
 			RequestURI: parResp.RequestURI,
 		}
 	} else {
 		// regular authorization code flow
-		aReq = AuthorizationRequest{
-			ResponseType: "code",
-			ClientID:     c.Config.ClientID,
-			Scope:        c.FlowConfig.Scopes,
-			RedirectURI:  c.FlowConfig.CallbackURI,
-			Prompt:       c.FlowConfig.Prompt,
-			AcrValues:    c.FlowConfig.AcrValues,
-			LoginHint:    c.FlowConfig.LoginHint,
-			MaxAge:       c.FlowConfig.MaxAge,
-			UILocales:    c.FlowConfig.UILocales,
-			State:        c.FlowConfig.State,
+		aReq = &httpclient.AuthorizationCodeRequest{
+			ClientID:    c.Config.ClientID,
+			Scope:       c.FlowConfig.Scopes,
+			RedirectURI: c.FlowConfig.CallbackURI,
+			Prompt:      c.FlowConfig.Prompt,
+			AcrValues:   c.FlowConfig.AcrValues,
+			LoginHint:   c.FlowConfig.LoginHint,
+			MaxAge:      c.FlowConfig.MaxAge,
+			UILocales:   c.FlowConfig.UILocales,
+			State:       c.FlowConfig.State,
+			CustomArgs:  c.FlowConfig.CustomArgs,
 		}
 		if c.FlowConfig.PKCE {
-			// Starting with a byte array of 31-96 bytes ensures that the base64 encoded string will be between 43 and 128 characters long as required by RFC7636
-			codeVerifier, err := crypto.GeneratePKCECodeVerifier()
+			codeVerifier, err = crypto.GeneratePKCECodeVerifier()
 			if err != nil {
 				return fmt.Errorf("failed to generate PKCE code verifier: %w", err)
 			}
@@ -98,9 +97,10 @@ func (c *AuthorizationCodeFlow) Run(ctx context.Context) error {
 		}
 	}
 
-	aResp, err := aReq.Execute(ctx, c.Config.AuthorizationEndpoint, c.FlowConfig.CallbackURI, c.FlowConfig.CustomArgs...)
+	httpClient := c.Config.Client
+	aResp, err := httpClient.ExecuteAuthorizationCodeRequest(ctx, c.Config.AuthorizationEndpoint, c.FlowConfig.CallbackURI, aReq)
 	if err != nil {
-		return err
+		return fmt.Errorf("authorization request failed: %w", err)
 	}
 
 	headers := make(map[string]string)
@@ -123,7 +123,6 @@ func (c *AuthorizationCodeFlow) Run(ctx context.Context) error {
 		aResp.Code,
 		c.FlowConfig.CallbackURI,
 		codeVerifier)
-	httpClient := c.Config.Client
 
 	resp, err := httpClient.ExecuteTokenRequest(ctx, c.Config.TokenEndpoint, tokenRequest, headers)
 	if err != nil {

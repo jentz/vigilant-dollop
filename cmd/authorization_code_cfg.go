@@ -4,8 +4,20 @@ import (
 	"bytes"
 	"flag"
 
+	"github.com/jentz/oidc-cli/httpclient"
 	"github.com/jentz/oidc-cli/oidc"
 )
+
+type CustomArgsFlag []string
+
+func (c *CustomArgsFlag) String() string {
+	return ""
+}
+
+func (c *CustomArgsFlag) Set(value string) error {
+	*c = append(*c, value)
+	return nil
+}
 
 func parseAuthorizationCodeFlags(name string, args []string, oidcConf *oidc.Config) (runner CommandRunner, output string, err error) {
 	flags := flag.NewFlagSet(name, flag.ContinueOnError)
@@ -32,7 +44,8 @@ func parseAuthorizationCodeFlags(name string, args []string, oidcConf *oidc.Conf
 	flags.StringVar(&flowConf.MaxAge, "max-age", "", "set max_age parameter")
 	flags.StringVar(&flowConf.UILocales, "ui-locales", "", "set ui_locales parameter")
 	flags.StringVar(&flowConf.State, "state", "", "set state parameter")
-	flags.Var(&flowConf.CustomArgs, "custom", "custom authorization parameters, argument can be given multiple times")
+	var customArgs CustomArgsFlag
+	flags.Var(&customArgs, "custom", "custom authorization parameters, argument can be given multiple times")
 	flags.BoolVar(&flowConf.PKCE, "pkce", false, "use proof-key for code exchange (PKCE)")
 	flags.BoolVar(&flowConf.PAR, "par", false, "use pushed authorization requests")
 	flags.BoolVar(&flowConf.DPoP, "dpop", false, "use dpop-protected access tokens")
@@ -45,6 +58,19 @@ func parseAuthorizationCodeFlags(name string, args []string, oidcConf *oidc.Conf
 	err = flags.Parse(args)
 	if err != nil {
 		return nil, buf.String(), flag.ErrHelp
+	}
+
+	// populate custom args
+	if len(customArgs) > 0 {
+		if flowConf.CustomArgs == nil {
+			flowConf.CustomArgs = &httpclient.CustomArgs{}
+		}
+		for _, arg := range customArgs {
+			err := flowConf.CustomArgs.Set(arg)
+			if err != nil {
+				return nil, buf.String(), err
+			}
+		}
 	}
 
 	var invalidArgsChecks = []struct {
