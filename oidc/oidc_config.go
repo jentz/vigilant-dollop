@@ -101,14 +101,3 @@ func (c *Config) ReadKeyFiles() error {
 	}
 	return nil
 }
-
-type CustomArgs []string
-
-func (c *CustomArgs) String() string {
-	return ""
-}
-
-func (c *CustomArgs) Set(value string) error {
-	*c = append(*c, value)
-	return nil
-}

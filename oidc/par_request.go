@@ -31,7 +31,7 @@ type PushedAuthorizationRequest struct {
 	AuthMethod          httpclient.AuthMethod `schema:"-"` // not part of the request
 }
 
-func (parReq *PushedAuthorizationRequest) Execute(ctx context.Context, pushedAuthEndpoint string, httpClient *http.Client, customArgs ...string) (parResp *PushedAuthorizationResponse, err error) {
+func (parReq *PushedAuthorizationRequest) Execute(ctx context.Context, pushedAuthEndpoint string, httpClient *http.Client, customArgs *httpclient.CustomArgs) (parResp *PushedAuthorizationResponse, err error) {
 	_, err = url.Parse(parReq.RedirectURI)
 	if err != nil {
 		log.Printf("unable to parse redirect uri %s because %v\n", parReq.RedirectURI, err)
@@ -46,9 +46,10 @@ func (parReq *PushedAuthorizationRequest) Execute(ctx context.Context, pushedAut
 	}
 
 	// Add custom args to the request
-	for _, arg := range customArgs {
-		kv := strings.SplitN(arg, "=", 2)
-		body.Set(kv[0], kv[1])
+	if customArgs != nil {
+		for k, v := range *customArgs {
+			body.Set(k, v)
+		}
 	}
 
 	if parReq.AuthMethod == httpclient.AuthMethodBasic {

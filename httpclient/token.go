@@ -1,0 +1,151 @@
+package httpclient
+
+import (
+	"context"
+	"encoding/base64"
+	"fmt"
+	"net/url"
+)
+
+// TokenRequest represents an OAuth2 token request
+type TokenRequest struct {
+	GrantType    string
+	ClientID     string
+	ClientSecret string
+	AuthMethod   AuthMethod
+	Params       url.Values
+}
+
+// ExecuteTokenRequest sends a token request to the specified endpoint
+func (c *Client) ExecuteTokenRequest(ctx context.Context, tokenEndpoint string, req *TokenRequest, headers map[string]string) (*Response, error) {
+	if req.Params == nil {
+		req.Params = url.Values{}
+	}
+
+	if headers == nil {
+		headers = make(map[string]string)
+	}
+
+	// Set grant type
+	req.Params.Set("grant_type", req.GrantType)
+
+	// Apply authentication method
+	switch req.AuthMethod {
+	case AuthMethodBasic:
+		// Use HTTP Basic Auth
+		auth := base64.StdEncoding.EncodeToString([]byte(req.ClientID + ":" + req.ClientSecret))
+		headers["Authorization"] = "Basic " + auth
+	case AuthMethodPost:
+		// Include credentials in request body
+		req.Params.Set("client_id", req.ClientID)
+		if req.ClientSecret != "" {
+			req.Params.Set("client_secret", req.ClientSecret)
+		}
+	case AuthMethodNone:
+		// Just include client_id in request body
+		req.Params.Set("client_id", req.ClientID)
+	}
+
+	// Add custom headers
+	headers["Content-Type"] = "application/x-www-form-urlencoded"
+
+	// Execute the request
+	return c.PostForm(ctx, tokenEndpoint, req.Params, headers)
+}
+
+// CreateAuthCodeTokenRequest creates a token request for the authorization code grant
+func CreateAuthCodeTokenRequest(clientID, clientSecret string, authMethod AuthMethod, code, redirectURI, codeVerifier string) *TokenRequest {
+	params := url.Values{}
+	params.Set("code", code)
+	params.Set("redirect_uri", redirectURI)
+	if codeVerifier != "" {
+		params.Set("code_verifier", codeVerifier)
+	}
+
+	return &TokenRequest{
+		GrantType:    "authorization_code",
+		ClientID:     clientID,
+		ClientSecret: clientSecret,
+		AuthMethod:   authMethod,
+		Params:       params,
+	}
+}
+
+// CreateRefreshTokenRequest creates a token request for the refresh token grant
+func CreateRefreshTokenRequest(clientID, clientSecret string, authMethod AuthMethod, refreshToken, scope string) *TokenRequest {
+	params := url.Values{}
+	params.Set("refresh_token", refreshToken)
+	if scope != "" {
+		params.Set("scope", scope)
+	}
+
+	return &TokenRequest{
+		GrantType:    "refresh_token",
+		ClientID:     clientID,
+		ClientSecret: clientSecret,
+		AuthMethod:   authMethod,
+		Params:       params,
+	}
+}
+
+// CreateClientCredentialsRequest creates a token request for the client credentials grant
+func CreateClientCredentialsRequest(clientID, clientSecret string, authMethod AuthMethod, scope string) *TokenRequest {
+	params := url.Values{}
+	if scope != "" {
+		params.Set("scope", scope)
+	}
+
+	return &TokenRequest{
+		GrantType:    "client_credentials",
+		ClientID:     clientID,
+		ClientSecret: clientSecret,
+		AuthMethod:   authMethod,
+		Params:       params,
+	}
+}
+
+// CreateDeviceCodeTokenRequest creates a token request for the device code grant
+func CreateDeviceCodeTokenRequest(clientID, clientSecret string, authMethod AuthMethod, deviceCode string) *TokenRequest {
+	params := url.Values{}
+	params.Set("device_code", deviceCode)
+
+	return &TokenRequest{
+		GrantType:    "urn:ietf:params:oauth:grant-type:device_code",
+		ClientID:     clientID,
+		ClientSecret: clientSecret,
+		AuthMethod:   authMethod,
+		Params:       params,
+	}
+}
+
+// ParseTokenResponse parses the standard OAuth2 token response
+func ParseTokenResponse(resp *Response) (map[string]interface{}, error) {
+	var tokenResp map[string]interface{}
+
+	// Try to parse JSON regardless of status code
+	if err := resp.JSON(&tokenResp); err != nil {
+		return nil, fmt.Errorf("%w: %v", ErrParsingJSON, err)
+	}
+
+	// Check if there was an HTTP error
+	if !resp.IsSuccess() {
+		oauth2Err := &OAuth2Error{
+			StatusCode: resp.StatusCode,
+			RawBody:    resp.String(),
+		}
+
+		// Extract standard OAuth2 error fields if present
+		if errStr, ok := tokenResp["error"].(string); ok {
+			oauth2Err.ErrorType = errStr
+			if desc, ok := tokenResp["error_description"].(string); ok {
+				oauth2Err.ErrorDescription = desc
+			}
+			return tokenResp, fmt.Errorf("%w: %v", ErrOAuthError, oauth2Err)
+		}
+
+		return tokenResp, fmt.Errorf("%w: %v", ErrHTTPFailure, oauth2Err)
+	}
+
+	// Success case with valid JSON and 2xx status code
+	return tokenResp, nil
+}
