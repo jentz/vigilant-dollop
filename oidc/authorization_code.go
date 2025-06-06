@@ -35,17 +35,8 @@ type AuthorizationCodeFlowConfig struct {
 func (c *AuthorizationCodeFlow) Run(ctx context.Context) error {
 	c.client = NewClient(c.Config)
 
-	err := c.Config.DiscoverEndpoints(ctx)
-	if err != nil {
-		return fmt.Errorf("failed to discover endpoints: %w", err)
-	}
 	if c.FlowConfig.PKCE && c.Config.ClientSecret == "" {
 		c.Config.AuthMethod = httpclient.AuthMethodNone
-	}
-
-	err = c.Config.ReadKeyFiles()
-	if err != nil {
-		return fmt.Errorf("failed to read key files: %w", err)
 	}
 
 	aReq := AuthorizationRequest{}
@@ -67,7 +58,7 @@ func (c *AuthorizationCodeFlow) Run(ctx context.Context) error {
 			AuthMethod:   c.Config.AuthMethod,
 		}
 		if c.FlowConfig.PKCE {
-			codeVerifier, err = crypto.GeneratePKCECodeVerifier()
+			codeVerifier, err := crypto.GeneratePKCECodeVerifier()
 			if err != nil {
 				return fmt.Errorf("failed to generate PKCE code verifier: %w", err)
 			}
@@ -98,7 +89,7 @@ func (c *AuthorizationCodeFlow) Run(ctx context.Context) error {
 		}
 		if c.FlowConfig.PKCE {
 			// Starting with a byte array of 31-96 bytes ensures that the base64 encoded string will be between 43 and 128 characters long as required by RFC7636
-			codeVerifier, err = crypto.GeneratePKCECodeVerifier()
+			codeVerifier, err := crypto.GeneratePKCECodeVerifier()
 			if err != nil {
 				return fmt.Errorf("failed to generate PKCE code verifier: %w", err)
 			}
@@ -132,7 +123,7 @@ func (c *AuthorizationCodeFlow) Run(ctx context.Context) error {
 		aResp.Code,
 		c.FlowConfig.CallbackURI,
 		codeVerifier)
-	httpClient := c.Config.Client()
+	httpClient := c.Config.Client
 
 	resp, err := httpClient.ExecuteTokenRequest(ctx, c.Config.TokenEndpoint, tokenRequest, headers)
 	if err != nil {

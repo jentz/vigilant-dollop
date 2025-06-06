@@ -20,12 +20,7 @@ type ClientCredentialsFlowConfig struct {
 }
 
 func (c *ClientCredentialsFlow) Run(ctx context.Context) error {
-	client := c.Config.Client()
-
-	err := c.Config.DiscoverEndpoints(ctx)
-	if err != nil {
-		return fmt.Errorf("failed to discover endpoints: %w", err)
-	}
+	client := c.Config.Client
 
 	req := httpclient.CreateClientCredentialsRequest(
 		c.Config.ClientID,

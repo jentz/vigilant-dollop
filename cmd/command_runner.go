@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"flag"
+	"fmt"
 	"os"
 	"os/signal"
 	"slices"
@@ -103,6 +104,12 @@ func RunCommand(name string, args []string, globalConf *oidc.Config) {
 		cancel()
 	}()
 
+	// In main.go or cmd.RunCommand
+	if err := prepareOIDCConfig(ctx, globalConf); err != nil {
+		log.Errorln("configuration error:", err)
+		os.Exit(1)
+	}
+
 	if err := command.Run(ctx); err != nil {
 		if errors.Is(err, context.Canceled) {
 			log.Errorln("operation cancelled")
@@ -114,4 +121,14 @@ func RunCommand(name string, args []string, globalConf *oidc.Config) {
 		log.Errorf("error: %v\n", err.Error())
 		os.Exit(1)
 	}
+}
+
+func prepareOIDCConfig(ctx context.Context, conf *oidc.Config) error {
+	if err := conf.DiscoverEndpoints(ctx); err != nil {
+		return fmt.Errorf("failed to discover endpoints: %w", err)
+	}
+	if err := conf.ReadKeyFiles(); err != nil {
+		return fmt.Errorf("failed to read key files: %w", err)
+	}
+	return nil
 }

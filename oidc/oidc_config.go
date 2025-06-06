@@ -25,20 +25,11 @@ type Config struct {
 	PublicKeyFile                      string
 	PrivateKey                         any
 	PublicKey                          any
-	client                             *httpclient.Client
-}
-
-func (c *Config) Client() *httpclient.Client {
-	if c.client == nil {
-		c.client = httpclient.NewClient(&httpclient.Config{
-			SkipTLSVerify: c.SkipTLSVerify,
-		})
-	}
-	return c.client
+	Client                             *httpclient.Client
 }
 
 func (c *Config) DiscoverEndpoints(ctx context.Context) error {
-	client := c.Client()
+	client := c.Client
 
 	discoveryConfig, err := c.Discover(ctx, client)
 	if err != nil {

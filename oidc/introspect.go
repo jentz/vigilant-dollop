@@ -2,7 +2,6 @@ package oidc
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/jentz/oidc-cli/log"
 )
@@ -22,11 +21,6 @@ type IntrospectFlowConfig struct {
 
 func (c *IntrospectFlow) Run(ctx context.Context) error {
 	c.client = NewClient(c.Config)
-
-	err := c.Config.DiscoverEndpoints(ctx)
-	if err != nil {
-		return fmt.Errorf("endpoint discpvery failed: %w", err)
-	}
 
 	req := IntrospectionRequest{
 		ClientID:       c.Config.ClientID,
