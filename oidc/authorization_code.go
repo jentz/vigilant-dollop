@@ -14,7 +14,6 @@ import (
 type AuthorizationCodeFlow struct {
 	Config     *Config
 	FlowConfig *AuthorizationCodeFlowConfig
-	client     *Client
 }
 
 type AuthorizationCodeFlowConfig struct {
@@ -32,113 +31,144 @@ type AuthorizationCodeFlowConfig struct {
 	DPoP        bool
 }
 
-func (c *AuthorizationCodeFlow) Run(ctx context.Context) error {
-	c.client = NewClient(c.Config)
+func (c *AuthorizationCodeFlow) wrapError(err error, operation string) error {
+	switch {
+	case errors.Is(err, httpclient.ErrParsingJSON):
+		return fmt.Errorf("invalid JSON response in %s: %w", operation, err)
+	case errors.Is(err, httpclient.ErrOAuthError):
+		return fmt.Errorf("authorization server rejected %s request: %w", operation, err)
+	case errors.Is(err, httpclient.ErrHTTPFailure):
+		return fmt.Errorf("HTTP request failed in %s: %w", operation, err)
+	default:
+		return fmt.Errorf("%s error: %w", operation, err)
+	}
+}
 
-	if c.FlowConfig.PKCE && c.Config.ClientSecret == "" {
+func (c *AuthorizationCodeFlow) setupPKCE() (string, error) {
+	if !c.FlowConfig.PKCE {
+		return "", nil
+	}
+	if c.Config.ClientSecret == "" {
 		c.Config.AuthMethod = httpclient.AuthMethodNone
 	}
+	codeVerifier, err := crypto.GeneratePKCECodeVerifier()
+	if err != nil {
+		return "", fmt.Errorf("failed to generate PKCE code verifier: %w", err)
+	}
+	return codeVerifier, nil
+}
 
-	var aReq *httpclient.AuthorizationCodeRequest
-	var codeVerifier string
-	var err error
+func (c *AuthorizationCodeFlow) createAuthCodeRequest(ctx context.Context, codeVerifier string) (*httpclient.AuthorizationCodeRequest, error) {
+	req := &httpclient.AuthorizationCodeRequest{
+		ClientID:    c.Config.ClientID,
+		Scope:       c.FlowConfig.Scopes,
+		RedirectURI: c.FlowConfig.CallbackURI,
+		Prompt:      c.FlowConfig.Prompt,
+		AcrValues:   c.FlowConfig.AcrValues,
+		LoginHint:   c.FlowConfig.LoginHint,
+		MaxAge:      c.FlowConfig.MaxAge,
+		UILocales:   c.FlowConfig.UILocales,
+		State:       c.FlowConfig.State,
+		CustomArgs:  c.FlowConfig.CustomArgs,
+	}
+	if codeVerifier != "" {
+		req.CodeChallenge = crypto.GeneratePKCECodeChallenge(codeVerifier)
+		req.CodeChallengeMethod = "S256"
+	}
 	if c.FlowConfig.PAR {
-		parReq := PushedAuthorizationRequest{
-			ResponseType: "code",
+		parParams, err := httpclient.CreateAuthorizationCodeRequestValues(req)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create authorization code request values: %w", err)
+		}
+		parReq := &httpclient.PushedAuthorizationRequest{
 			ClientID:     c.Config.ClientID,
 			ClientSecret: c.Config.ClientSecret,
-			Scope:        c.FlowConfig.Scopes,
-			RedirectURI:  c.FlowConfig.CallbackURI,
-			Prompt:       c.FlowConfig.Prompt,
-			AcrValues:    c.FlowConfig.AcrValues,
-			LoginHint:    c.FlowConfig.LoginHint,
-			MaxAge:       c.FlowConfig.MaxAge,
-			UILocales:    c.FlowConfig.UILocales,
-			State:        c.FlowConfig.State,
 			AuthMethod:   c.Config.AuthMethod,
+			Params:       parParams,
 		}
-		if c.FlowConfig.PKCE {
-			codeVerifier, err = crypto.GeneratePKCECodeVerifier()
-			if err != nil {
-				return fmt.Errorf("failed to generate PKCE code verifier: %w", err)
-			}
-			parReq.CodeChallenge = crypto.GeneratePKCECodeChallenge(codeVerifier)
-			parReq.CodeChallengeMethod = "S256"
-		}
-		parResp, err := parReq.Execute(ctx, c.Config.PushedAuthorizationRequestEndpoint, c.client.http, c.FlowConfig.CustomArgs)
+		resp, err := c.Config.Client.ExecutePushedAuthorizationRequest(ctx, c.Config.PushedAuthorizationRequestEndpoint, parReq)
 		if err != nil {
-			return err
+			return nil, fmt.Errorf("pushed authorization request failed: %w", err)
 		}
-		aReq = &httpclient.AuthorizationCodeRequest{
-			ClientID:   c.Config.ClientID,
-			RequestURI: parResp.RequestURI,
+		parResp, err := httpclient.ParsePushedAuthorizationResponse(resp)
+		if err != nil {
+			return nil, c.wrapError(err, "pushed authorization")
 		}
-	} else {
-		// regular authorization code flow
-		aReq = &httpclient.AuthorizationCodeRequest{
-			ClientID:    c.Config.ClientID,
-			Scope:       c.FlowConfig.Scopes,
-			RedirectURI: c.FlowConfig.CallbackURI,
-			Prompt:      c.FlowConfig.Prompt,
-			AcrValues:   c.FlowConfig.AcrValues,
-			LoginHint:   c.FlowConfig.LoginHint,
-			MaxAge:      c.FlowConfig.MaxAge,
-			UILocales:   c.FlowConfig.UILocales,
-			State:       c.FlowConfig.State,
-			CustomArgs:  c.FlowConfig.CustomArgs,
-		}
-		if c.FlowConfig.PKCE {
-			codeVerifier, err = crypto.GeneratePKCECodeVerifier()
-			if err != nil {
-				return fmt.Errorf("failed to generate PKCE code verifier: %w", err)
-			}
-			aReq.CodeChallenge = crypto.GeneratePKCECodeChallenge(codeVerifier)
-			aReq.CodeChallengeMethod = "S256"
-		}
+		req.RequestURI = parResp.RequestURI
 	}
+	return req, nil
+}
 
-	httpClient := c.Config.Client
-	aResp, err := httpClient.ExecuteAuthorizationCodeRequest(ctx, c.Config.AuthorizationEndpoint, c.FlowConfig.CallbackURI, aReq)
+func (c *AuthorizationCodeFlow) executeAuthCodeRequest(ctx context.Context, req *httpclient.AuthorizationCodeRequest) (*httpclient.AuthorizationCodeResponse, error) {
+	resp, err := c.Config.Client.ExecuteAuthorizationCodeRequest(ctx, c.Config.AuthorizationEndpoint, c.FlowConfig.CallbackURI, req)
 	if err != nil {
-		return fmt.Errorf("authorization request failed: %w", err)
+		return nil, fmt.Errorf("authorization request failed: %w", err)
 	}
+	return resp, nil
+}
 
+func (c *AuthorizationCodeFlow) setupDPoPHeaders() (map[string]string, error) {
 	headers := make(map[string]string)
 	if c.FlowConfig.DPoP {
 		dpopProof, err := crypto.NewDPoPProof(
 			c.Config.PublicKey,
 			c.Config.PrivateKey,
 			"POST",
-			c.Config.TokenEndpoint)
+			c.Config.TokenEndpoint,
+		)
 		if err != nil {
-			return err
+			return nil, fmt.Errorf("failed to create DPoP proof: %w", err)
 		}
 		headers["DPoP"] = dpopProof.String()
 	}
+	return headers, nil
+}
 
+func (c *AuthorizationCodeFlow) executeTokenRequest(ctx context.Context, code, codeVerifier string, headers map[string]string) (map[string]interface{}, error) {
 	tokenRequest := httpclient.CreateAuthCodeTokenRequest(
 		c.Config.ClientID,
 		c.Config.ClientSecret,
 		c.Config.AuthMethod,
-		aResp.Code,
+		code,
 		c.FlowConfig.CallbackURI,
-		codeVerifier)
-
-	resp, err := httpClient.ExecuteTokenRequest(ctx, c.Config.TokenEndpoint, tokenRequest, headers)
+		codeVerifier,
+	)
+	resp, err := c.Config.Client.ExecuteTokenRequest(ctx, c.Config.TokenEndpoint, tokenRequest, headers)
 	if err != nil {
-		return fmt.Errorf("token request failed: %w", err)
+		return nil, fmt.Errorf("token request failed: %w", err)
 	}
-
 	tokenData, err := httpclient.ParseTokenResponse(resp)
 	if err != nil {
-		if errors.Is(err, httpclient.ErrParsingJSON) {
-			return fmt.Errorf("invalid JSON response: %w", err)
-		} else if errors.Is(err, httpclient.ErrOAuthError) {
-			return fmt.Errorf("authorization server rejected request: %w", err)
-		} else if errors.Is(err, httpclient.ErrHTTPFailure) {
-			return fmt.Errorf("HTTP request failed: %w", err)
-		}
-		return fmt.Errorf("token error: %w", err)
+		return nil, c.wrapError(err, "token")
+	}
+	return tokenData, nil
+}
+
+func (c *AuthorizationCodeFlow) Run(ctx context.Context) error {
+	// Handle PKCE
+	codeVerifier, err := c.setupPKCE()
+	if err != nil {
+		return err
+	}
+	// Create authorization code request (handling PAR if enabled)
+	authCodeReq, err := c.createAuthCodeRequest(ctx, codeVerifier)
+	if err != nil {
+		return err
+	}
+	// Execute authorization code request
+	authResp, err := c.executeAuthCodeRequest(ctx, authCodeReq)
+	if err != nil {
+		return err
+	}
+	// Handle DPoP
+	headers, err := c.setupDPoPHeaders()
+	if err != nil {
+		return err
+	}
+	// Exchange authorization code for access token
+	tokenData, err := c.executeTokenRequest(ctx, authResp.Code, codeVerifier, headers)
+	if err != nil {
+		return err
 	}
 
 	// Print available response data
