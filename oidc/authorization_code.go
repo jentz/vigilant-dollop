@@ -3,7 +3,6 @@ package oidc
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 
 	"github.com/jentz/oidc-cli/crypto"
@@ -29,19 +28,6 @@ type AuthorizationCodeFlowConfig struct {
 	PKCE        bool
 	PAR         bool
 	DPoP        bool
-}
-
-func (c *AuthorizationCodeFlow) wrapError(err error, operation string) error {
-	switch {
-	case errors.Is(err, httpclient.ErrParsingJSON):
-		return fmt.Errorf("invalid JSON response in %s: %w", operation, err)
-	case errors.Is(err, httpclient.ErrOAuthError):
-		return fmt.Errorf("authorization server rejected %s request: %w", operation, err)
-	case errors.Is(err, httpclient.ErrHTTPFailure):
-		return fmt.Errorf("HTTP request failed in %s: %w", operation, err)
-	default:
-		return fmt.Errorf("%s error: %w", operation, err)
-	}
 }
 
 func (c *AuthorizationCodeFlow) setupPKCE() (string, error) {
@@ -92,7 +78,7 @@ func (c *AuthorizationCodeFlow) createAuthCodeRequest(ctx context.Context, codeV
 		}
 		parResp, err := httpclient.ParsePushedAuthorizationResponse(resp)
 		if err != nil {
-			return nil, c.wrapError(err, "pushed authorization")
+			return nil, httpclient.WrapError(err, "pushed authorization")
 		}
 		req.RequestURI = parResp.RequestURI
 	}
@@ -139,7 +125,7 @@ func (c *AuthorizationCodeFlow) executeTokenRequest(ctx context.Context, code, c
 	}
 	tokenData, err := httpclient.ParseTokenResponse(resp)
 	if err != nil {
-		return nil, c.wrapError(err, "token")
+		return nil, httpclient.WrapError(err, "token")
 	}
 	return tokenData, nil
 }
@@ -172,9 +158,10 @@ func (c *AuthorizationCodeFlow) Run(ctx context.Context) error {
 	}
 
 	// Print available response data
-	if tokenData != nil {
-		prettyJSON, _ := json.MarshalIndent(tokenData, "", "  ")
-		log.Outputf("%s\n", string(prettyJSON))
+	prettyJSON, err := json.MarshalIndent(tokenData, "", "  ")
+	if err != nil {
+		return fmt.Errorf("failed to format token response: %w", err)
 	}
+	log.Outputf("%s\n", string(prettyJSON))
 	return nil
 }

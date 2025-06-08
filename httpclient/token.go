@@ -126,7 +126,7 @@ func ParseTokenResponse(resp *Response) (map[string]interface{}, error) {
 
 	// Check if there was an HTTP error
 	if !resp.IsSuccess() {
-		oauth2Err := &OAuth2Error{
+		oauth2Err := &Error{
 			StatusCode: resp.StatusCode,
 			RawBody:    resp.String(),
 		}
