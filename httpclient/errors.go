@@ -7,25 +7,39 @@ import (
 
 // OAuth2 error types
 var (
-	ErrHTTPFailure = errors.New("oauth http failure")
-	ErrParsingJSON = errors.New("json parsing error")
-	ErrOAuthError  = errors.New("oauth protocol error")
+	ErrHTTPFailure   = errors.New("oauth http failure")
+	ErrParsingJSON   = errors.New("json parsing error")
+	ErrOAuthError    = errors.New("oauth protocol error")
+	ErrIssuerInvalid = errors.New("issuer does not match")
 )
 
-// OAuth2Error represents a standard OAuth2 error response
-type OAuth2Error struct {
+// Error represents a standard OAuth2 error response
+type Error struct {
 	StatusCode       int
 	ErrorType        string
 	ErrorDescription string
 	RawBody          string
 }
 
-func (e *OAuth2Error) Error() string {
+func (e *Error) Error() string {
 	if e.ErrorType != "" {
 		if e.ErrorDescription != "" {
-			return fmt.Sprintf("oauth error: %s - %s, status: %d", e.ErrorType, e.ErrorDescription, e.StatusCode)
+			return fmt.Sprintf("error: %s - %s, status: %d", e.ErrorType, e.ErrorDescription, e.StatusCode)
 		}
-		return fmt.Sprintf("oauth error: %s, status: %d", e.ErrorType, e.StatusCode)
+		return fmt.Sprintf("error: %s, status: %d", e.ErrorType, e.StatusCode)
 	}
-	return fmt.Sprintf("token request failed with status: %d, body: %s", e.StatusCode, e.RawBody)
+	return fmt.Sprintf("request failed with status: %d, body: %s", e.StatusCode, e.RawBody)
+}
+
+func WrapError(err error, operation string) error {
+	switch {
+	case errors.Is(err, ErrParsingJSON):
+		return fmt.Errorf("invalid JSON response in %s: %w", operation, err)
+	case errors.Is(err, ErrOAuthError):
+		return fmt.Errorf("authorization server rejected %s request: %w", operation, err)
+	case errors.Is(err, ErrHTTPFailure):
+		return fmt.Errorf("HTTP request failed in %s: %w", operation, err)
+	default:
+		return fmt.Errorf("%s error: %w", operation, err)
+	}
 }

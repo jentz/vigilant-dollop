@@ -46,7 +46,7 @@ func (c *Client) ExecutePushedAuthorizationRequest(ctx context.Context, endpoint
 
 func ParsePushedAuthorizationResponse(resp *Response) (*PushedAuthorizationResponse, error) {
 	if !resp.IsSuccess() {
-		oauth2Err := &OAuth2Error{
+		oauth2Err := &Error{
 			StatusCode: resp.StatusCode,
 			RawBody:    resp.String(),
 		}

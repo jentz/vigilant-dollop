@@ -53,7 +53,7 @@ func (c *Config) Discover(ctx context.Context, client *httpclient.Client) (*Disc
 
 	// Validate issuer - only if using standard discovery endpoint
 	if c.DiscoveryEndpoint == "" && discoveryConfig.Issuer != c.IssuerURL {
-		return nil, ErrIssuerInvalid
+		return nil, httpclient.ErrIssuerInvalid
 	}
 
 	return discoveryConfig, nil

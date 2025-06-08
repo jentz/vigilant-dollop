@@ -3,7 +3,6 @@ package oidc
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 
 	"github.com/jentz/oidc-cli/httpclient"
@@ -36,20 +35,14 @@ func (c *ClientCredentialsFlow) Run(ctx context.Context) error {
 
 	tokenData, err := httpclient.ParseTokenResponse(resp)
 	if err != nil {
-		if errors.Is(err, httpclient.ErrParsingJSON) {
-			return fmt.Errorf("invalid JSON response: %w", err)
-		} else if errors.Is(err, httpclient.ErrOAuthError) {
-			return fmt.Errorf("authorization server rejected request: %w", err)
-		} else if errors.Is(err, httpclient.ErrHTTPFailure) {
-			return fmt.Errorf("HTTP request failed: %w", err)
-		}
-		return fmt.Errorf("token error: %w", err)
+		return httpclient.WrapError(err, "token")
 	}
 
 	// Print available response data
-	if tokenData != nil {
-		prettyJSON, _ := json.MarshalIndent(tokenData, "", "  ")
-		log.Outputf("%s\n", string(prettyJSON))
+	prettyJSON, err := json.MarshalIndent(tokenData, "", "  ")
+	if err != nil {
+		return fmt.Errorf("failed to format token response: %w", err)
 	}
+	log.Outputf("%s\n", string(prettyJSON))
 	return nil
 }

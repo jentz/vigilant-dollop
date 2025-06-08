@@ -3,7 +3,6 @@ package oidc
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 
 	"github.com/jentz/oidc-cli/httpclient"
@@ -32,14 +31,7 @@ func (c *TokenRefreshFlow) Run(ctx context.Context) error {
 
 	tokenData, err := httpclient.ParseTokenResponse(resp)
 	if err != nil {
-		if errors.Is(err, httpclient.ErrParsingJSON) {
-			return fmt.Errorf("invalid JSON response: %w", err)
-		} else if errors.Is(err, httpclient.ErrOAuthError) {
-			return fmt.Errorf("authorization server rejected request: %w", err)
-		} else if errors.Is(err, httpclient.ErrHTTPFailure) {
-			return fmt.Errorf("HTTP request failed: %w", err)
-		}
-		return fmt.Errorf("token error: %w", err)
+		return httpclient.WrapError(err, "token")
 	}
 
 	// Print available response data
