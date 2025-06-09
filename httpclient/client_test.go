@@ -2,8 +2,12 @@ package httpclient
 
 import (
 	"context"
+	"encoding/json"
+	"io"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
+	"strings"
 	"testing"
 	"time"
 )
@@ -113,12 +117,280 @@ func TestCustomTransport(t *testing.T) {
 
 	client := NewClient(cfg)
 	resp, err := client.Get(context.Background(), ts.URL, nil)
-
 	if err != nil {
 		t.Fatalf("Unexpected error: %v", err)
 	}
 
 	if !resp.IsSuccess() {
 		t.Errorf("Expected successful response, got: %d", resp.StatusCode)
+	}
+}
+
+func TestPost(t *testing.T) {
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			t.Errorf("Expected POST method, got %s", r.Method)
+		}
+		body, _ := io.ReadAll(r.Body)
+		w.WriteHeader(http.StatusCreated)
+		_, _ = w.Write([]byte("received: " + string(body)))
+	}))
+	defer ts.Close()
+
+	client := NewClient(nil)
+	body := strings.NewReader("test data")
+	headers := map[string]string{"Custom-Header": "test-value"}
+
+	resp, err := client.Post(context.Background(), ts.URL, body, headers)
+	if err != nil {
+		t.Fatalf("Unexpected error: %v", err)
+	}
+
+	got := resp.StatusCode
+	want := http.StatusCreated
+	if got != want {
+		t.Errorf("got status code %d, want %d", got, want)
+	}
+
+	gotBody := resp.String()
+	wantBody := "received: test data"
+	if gotBody != wantBody {
+		t.Errorf("got body %q, want %q", gotBody, wantBody)
+	}
+}
+
+func TestPostForm(t *testing.T) {
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			t.Errorf("Expected POST method, got %s", r.Method)
+		}
+
+		contentType := r.Header.Get("Content-Type")
+		if contentType != "application/x-www-form-urlencoded" {
+			t.Errorf("Expected form content type, got %s", contentType)
+		}
+
+		_ = r.ParseForm()
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte("username=" + r.FormValue("username")))
+	}))
+	defer ts.Close()
+
+	client := NewClient(nil)
+	formValues := url.Values{
+		"username": []string{"testuser"},
+		"password": []string{"secret"},
+	}
+	headers := map[string]string{"Custom-Header": "form-test"}
+
+	resp, err := client.PostForm(context.Background(), ts.URL, formValues, headers)
+	if err != nil {
+		t.Fatalf("Unexpected error: %v", err)
+	}
+
+	got := resp.StatusCode
+	want := http.StatusOK
+	if got != want {
+		t.Errorf("got status code %d, want %d", got, want)
+	}
+
+	gotBody := resp.String()
+	wantBody := "username=testuser"
+	if gotBody != wantBody {
+		t.Errorf("got body %q, want %q", gotBody, wantBody)
+	}
+}
+
+func TestPostJSON(t *testing.T) {
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			t.Errorf("Expected POST method, got %s", r.Method)
+		}
+
+		contentType := r.Header.Get("Content-Type")
+		if contentType != "application/json" {
+			t.Errorf("Expected JSON content type, got %s", contentType)
+		}
+
+		var data map[string]interface{}
+		_ = json.NewDecoder(r.Body).Decode(&data)
+
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		response := map[string]interface{}{
+			"received": data["message"],
+			"status":   "ok",
+		}
+		_ = json.NewEncoder(w).Encode(response)
+	}))
+	defer ts.Close()
+
+	client := NewClient(nil)
+	requestData := map[string]interface{}{
+		"message": "hello world",
+		"count":   42,
+	}
+	headers := map[string]string{"Custom-Header": "json-test"}
+
+	resp, err := client.PostJSON(context.Background(), ts.URL, requestData, headers)
+	if err != nil {
+		t.Fatalf("Unexpected error: %v", err)
+	}
+
+	got := resp.StatusCode
+	want := http.StatusOK
+	if got != want {
+		t.Errorf("got status code %d, want %d", got, want)
+	}
+
+	var responseData map[string]interface{}
+	err = resp.JSON(&responseData)
+	if err != nil {
+		t.Fatalf("Failed to parse JSON response: %v", err)
+	}
+
+	gotMessage := responseData["received"].(string)
+	wantMessage := "hello world"
+	if gotMessage != wantMessage {
+		t.Errorf("got message %q, want %q", gotMessage, wantMessage)
+	}
+}
+
+func TestPostJSON_MarshalError(t *testing.T) {
+	client := NewClient(nil)
+
+	// Use a function as data, which cannot be marshaled to JSON
+	invalidData := func() {}
+
+	_, err := client.PostJSON(context.Background(), "http://example.com", invalidData, nil)
+	if err == nil {
+		t.Error("Expected JSON marshal error, got nil")
+	}
+}
+
+func TestResponseMethods(t *testing.T) {
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		response := map[string]interface{}{
+			"message": "test response",
+			"code":    200,
+		}
+		_ = json.NewEncoder(w).Encode(response)
+	}))
+	defer ts.Close()
+
+	client := NewClient(nil)
+	resp, err := client.Get(context.Background(), ts.URL, nil)
+	if err != nil {
+		t.Fatalf("Unexpected error: %v", err)
+	}
+
+	// Test String method
+	gotString := resp.String()
+	if !strings.Contains(gotString, "test response") {
+		t.Errorf("String() method should contain 'test response', got %q", gotString)
+	}
+
+	// Test JSON method
+	var data map[string]interface{}
+	err = resp.JSON(&data)
+	if err != nil {
+		t.Fatalf("JSON() method failed: %v", err)
+	}
+
+	gotMessage := data["message"].(string)
+	wantMessage := "test response"
+	if gotMessage != wantMessage {
+		t.Errorf("got message %q, want %q", gotMessage, wantMessage)
+	}
+
+	gotCode := int(data["code"].(float64))
+	wantCode := 200
+	if gotCode != wantCode {
+		t.Errorf("got code %d, want %d", gotCode, wantCode)
+	}
+}
+
+func TestResponseJSON_InvalidJSON(t *testing.T) {
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte("invalid json"))
+	}))
+	defer ts.Close()
+
+	client := NewClient(nil)
+	resp, err := client.Get(context.Background(), ts.URL, nil)
+	if err != nil {
+		t.Fatalf("Unexpected error: %v", err)
+	}
+
+	var data map[string]interface{}
+	err = resp.JSON(&data)
+	if err == nil {
+		t.Error("Expected JSON unmarshal error, got nil")
+	}
+}
+
+func TestResponseIsSuccess(t *testing.T) {
+	tests := []struct {
+		name       string
+		statusCode int
+		want       bool
+	}{
+		{"200 OK", 200, true},
+		{"201 Created", 201, true},
+		{"299 edge case", 299, true},
+		{"300 Redirect", 300, false},
+		{"404 Not Found", 404, false},
+		{"500 Server Error", 500, false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+				w.WriteHeader(tt.statusCode)
+				_, _ = w.Write([]byte("test"))
+			}))
+			defer ts.Close()
+
+			client := NewClient(nil)
+			resp, err := client.Get(context.Background(), ts.URL, nil)
+			if err != nil {
+				t.Fatalf("Unexpected error: %v", err)
+			}
+
+			got := resp.IsSuccess()
+			if got != tt.want {
+				t.Errorf("IsSuccess() = %v, want %v for status code %d (actual status: %d)", got, tt.want, tt.statusCode, resp.StatusCode)
+			}
+		})
+	}
+}
+
+func TestDo_InvalidURL(t *testing.T) {
+	client := NewClient(nil)
+	_, err := client.Do(context.Background(), http.MethodGet, "://invalid-url", nil, nil)
+	if err == nil {
+		t.Error("Expected error for invalid URL, got nil")
+	}
+}
+
+func TestDo_ContextCanceled(t *testing.T) {
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		time.Sleep(2 * time.Second)
+		_, _ = w.Write([]byte("delayed response"))
+	}))
+	defer ts.Close()
+
+	client := NewClient(&Config{Timeout: 10 * time.Second})
+	ctx, cancel := context.WithCancel(context.Background())
+
+	// Cancel the context immediately
+	cancel()
+
+	_, err := client.Do(ctx, http.MethodGet, ts.URL, nil, nil)
+	if err == nil {
+		t.Error("Expected context cancellation error, got nil")
 	}
 }
