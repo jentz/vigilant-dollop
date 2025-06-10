@@ -2,7 +2,7 @@
 Below are examples of use cases we have come across where ```oidc-cli``` can be of value.
 
 ## Before you start
-For brevity and readibility the examples below do not contain all arguments that are required by most or all of the commands. Please review the sections below and make sure to add these arguments when executing the examples.
+For brevity and readability the examples below do not contain all arguments that are required by most or all of the commands. Please review the sections below and make sure to add these arguments when executing the examples.
 
 ### Provide client id and secrets to oidc-cli
 The ```--client-id``` and ```--client-secret``` command-line arguments are required by most commands. 
@@ -60,7 +60,7 @@ This method can be used to check the validity and content of an access token, re
 oidc-cli introspect --token <token>
 ```
 
-The same can be executed on a refresh token to check it's validity and/or expiry time:
+The same can be executed on a refresh token to check its validity and/or expiry time:
 
 ```sh
 oidc-cli introspect --token <token> --token-type refresh_token

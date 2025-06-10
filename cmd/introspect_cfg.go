@@ -6,6 +6,7 @@ import (
 	"flag"
 	"os"
 
+	"github.com/jentz/oidc-cli/httpclient"
 	"github.com/jentz/oidc-cli/oidc"
 )
 
@@ -25,7 +26,9 @@ func parseIntrospectFlags(name string, args []string, oidcConf *oidc.Config) (ru
 	flags.StringVar(&flowConf.BearerToken, "bearer-token", "", "bearer token for authorization (required unless client secret is provided)")
 	flags.StringVar(&flowConf.Token, "token", "", "token to be introspected or '-' to read token from stdin (required)")
 	flags.StringVar(&flowConf.TokenTypeHint, "token-type", "access_token", "token type hint (e.g. access_token")
-	flags.StringVar(&flowConf.ResponseFormat, "response-format", "json", "requested format (e.g. json, jwt, token-introspection+jwt)")
+	flags.StringVar(&flowConf.AcceptMediaType, "accept-header", "", "set a custom accept header to request a format (e.g. application/json)")
+	var customArgs CustomArgsFlag
+	flags.Var(&customArgs, "custom", "custom parameters to send in the body of the request, argument can be given multiple times")
 
 	runner = &oidc.IntrospectFlow{
 		Config:     oidcConf,
@@ -35,6 +38,19 @@ func parseIntrospectFlags(name string, args []string, oidcConf *oidc.Config) (ru
 	err = flags.Parse(args)
 	if err != nil {
 		return nil, buf.String(), err
+	}
+
+	// populate custom args
+	if len(customArgs) > 0 {
+		if flowConf.CustomArgs == nil {
+			flowConf.CustomArgs = &httpclient.CustomArgs{}
+		}
+		for _, arg := range customArgs {
+			err := flowConf.CustomArgs.Set(arg)
+			if err != nil {
+				return nil, buf.String(), err
+			}
+		}
 	}
 
 	// Read token from stdin if token equals '-'

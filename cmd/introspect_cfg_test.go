@@ -24,7 +24,7 @@ func TestParseIntrospectFlagsResult(t *testing.T) {
 				"--client-secret", "client-secret",
 				"--token-type", "access_token",
 				"--token", "token",
-				"--response-format", "jwt",
+				"--accept-header", "jwt",
 			},
 			oidc.Config{
 				IssuerURL:             "https://example.com",
@@ -34,10 +34,10 @@ func TestParseIntrospectFlagsResult(t *testing.T) {
 				ClientSecret:          "client-secret",
 			},
 			oidc.IntrospectFlowConfig{
-				BearerToken:    "",
-				Token:          "token",
-				TokenTypeHint:  "access_token",
-				ResponseFormat: "jwt",
+				BearerToken:     "",
+				Token:           "token",
+				TokenTypeHint:   "access_token",
+				AcceptMediaType: "jwt",
 			},
 		},
 		{
@@ -56,10 +56,10 @@ func TestParseIntrospectFlagsResult(t *testing.T) {
 				ClientSecret:          "client-secret",
 			},
 			oidc.IntrospectFlowConfig{
-				BearerToken:    "",
-				Token:          "token",
-				TokenTypeHint:  "access_token",
-				ResponseFormat: "json",
+				BearerToken:     "",
+				Token:           "token",
+				TokenTypeHint:   "access_token",
+				AcceptMediaType: "",
 			},
 		},
 		{
@@ -78,10 +78,10 @@ func TestParseIntrospectFlagsResult(t *testing.T) {
 				ClientSecret:          "",
 			},
 			oidc.IntrospectFlowConfig{
-				BearerToken:    "bearer",
-				Token:          "token",
-				TokenTypeHint:  "access_token",
-				ResponseFormat: "json",
+				BearerToken:     "bearer",
+				Token:           "token",
+				TokenTypeHint:   "access_token",
+				AcceptMediaType: "",
 			},
 		},
 	}
@@ -149,5 +149,61 @@ func TestParseIntrospectFlagsError(t *testing.T) {
 				t.Errorf("output got empty, want error message")
 			}
 		})
+	}
+}
+
+func TestParseIntrospectFlagsCustomArgs(t *testing.T) {
+	testArgs := []string{
+		"--issuer", "https://example.com",
+		"--client-id", "client-id",
+		"--client-secret", "client-secret",
+		"--token", "token",
+		"--custom", "foo=bar",
+		"--custom", "baz=qux",
+	}
+	runner, output, err := parseIntrospectFlags("introspect", testArgs, &oidc.Config{})
+	if err != nil {
+		t.Fatalf("err got %v, want nil", err)
+	}
+	if output != "" {
+		t.Errorf("output got %q, want empty", output)
+	}
+	f, ok := runner.(*oidc.IntrospectFlow)
+	if !ok {
+		t.Fatalf("unexpected runner type: %T", runner)
+	}
+	// Assert OIDC config
+	wantOIDC := oidc.Config{
+		IssuerURL:             "https://example.com",
+		DiscoveryEndpoint:     "",
+		IntrospectionEndpoint: "",
+		ClientID:              "client-id",
+		ClientSecret:          "client-secret",
+	}
+	if !reflect.DeepEqual(*f.Config, wantOIDC) {
+		t.Errorf("OIDC Config got %+v, want %+v", *f.Config, wantOIDC)
+	}
+	// Assert Flow config (except CustomArgs)
+	wantFlow := oidc.IntrospectFlowConfig{
+		BearerToken:     "",
+		Token:           "token",
+		TokenTypeHint:   "access_token",
+		AcceptMediaType: "",
+	}
+	gotFlow := *f.FlowConfig
+	gotFlow.CustomArgs = nil
+	if !reflect.DeepEqual(gotFlow, wantFlow) {
+		t.Errorf("FlowConfig got %+v, want %+v", gotFlow, wantFlow)
+	}
+	// Assert CustomArgs
+	if f.FlowConfig.CustomArgs == nil {
+		t.Fatalf("CustomArgs is nil, want non-nil")
+	}
+	argsMap := map[string]string{}
+	for k, v := range *f.FlowConfig.CustomArgs {
+		argsMap[k] = v
+	}
+	if argsMap["foo"] != "bar" || argsMap["baz"] != "qux" {
+		t.Errorf("CustomArgs got %+v, want foo=bar and baz=qux", argsMap)
 	}
 }
