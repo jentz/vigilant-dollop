@@ -2,45 +2,55 @@ package oidc
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
 
+	"github.com/jentz/oidc-cli/httpclient"
 	"github.com/jentz/oidc-cli/log"
 )
 
 type IntrospectFlow struct {
 	Config     *Config
 	FlowConfig *IntrospectFlowConfig
-	client     *Client
 }
 
 type IntrospectFlowConfig struct {
-	BearerToken    string
-	Token          string
-	TokenTypeHint  string
-	ResponseFormat string
+	BearerToken     string
+	Token           string
+	TokenTypeHint   string
+	AcceptMediaType string
+	CustomArgs      *httpclient.CustomArgs
 }
 
 func (c *IntrospectFlow) Run(ctx context.Context) error {
-	c.client = NewClient(c.Config)
+	client := c.Config.Client
 
-	req := IntrospectionRequest{
-		ClientID:       c.Config.ClientID,
-		ClientSecret:   c.Config.ClientSecret,
-		Token:          c.FlowConfig.Token,
-		TokenTypeHint:  c.FlowConfig.TokenTypeHint,
-		BearerToken:    c.FlowConfig.BearerToken,
-		ResponseFormat: c.FlowConfig.ResponseFormat,
-		AuthMethod:     c.Config.AuthMethod,
+	req := &httpclient.IntrospectionRequest{
+		AuthMethod:      c.Config.AuthMethod,
+		ClientID:        c.Config.ClientID,
+		ClientSecret:    c.Config.ClientSecret,
+		BearerToken:     c.FlowConfig.BearerToken,
+		Token:           c.FlowConfig.Token,
+		TokenTypeHint:   c.FlowConfig.TokenTypeHint,
+		AcceptMediaType: c.FlowConfig.AcceptMediaType,
+		CustomArgs:      c.FlowConfig.CustomArgs,
 	}
 
-	resp, err := req.Execute(ctx, c.Config.IntrospectionEndpoint, c.client.http)
+	resp, err := client.ExecuteIntrospectionRequest(ctx, c.Config.IntrospectionEndpoint, req, nil /* no custom headers */)
 	if err != nil {
-		return err
+		return fmt.Errorf("introspection request failed: %w", err)
 	}
 
-	jsonStr, err := resp.JSON()
+	introspectionData, err := httpclient.ParseIntrospectionResponse(resp)
 	if err != nil {
-		return err
+		return httpclient.WrapError(err, "introspection")
 	}
-	log.Outputf(jsonStr + "\n")
+
+	// Print available response data
+	prettyJSON, err := json.MarshalIndent(introspectionData, "", "  ")
+	if err != nil {
+		return fmt.Errorf("failed to format introspection response: %w", err)
+	}
+	log.Outputf("%s\n", string(prettyJSON))
 	return nil
 }
