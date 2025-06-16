@@ -1,7 +1,7 @@
-# oidc-cli
+# oidc-cli 🚀
 Command-line OIDC client, get a token without all the fuss
 
-## Usage
+## Usage 🛠️
 
 ```bash
 oidc-cli is a command-line OIDC client, get a token without all the fuss
@@ -22,17 +22,28 @@ Flags:
 Run `oidc-cli <command> -h` to get help for a specific command
 ```
 
-## Installing
+## Installing 💾
 
-Installing with homebrew
+* Installing with homebrew 🍺
 ```bash
  brew tap jentz/oidc-cli
  brew install oidc-cli
  ```
+* Installing with scoop 🥄
+```powershell
+ scoop bucket add oidc-cli https://github.com/jentz/scoop-oidc-cli
+ scoop install oidc-cli
+```
+
+* Installing with go get
+```bash
+# NOTE: The dev version will be in effect!
+go install github.com/jentz/oidc-cli@latest
+```
 
 You can also download a suitable release for your platform from the [releases page](https://github.com/jentz/oidc-cli/releases).
 
-## Run
+## Run ▶️
 
 ```bash
 go run ./ authorization_code --authorization-url <authorization-url> --token-url <token-url> --client-id <client-id> --client-secret <client-secret> --scopes "openid profile"
@@ -49,4 +60,3 @@ go test -v ./...
 ```bash
  go build -v -o oidc-cli
 ```
-
