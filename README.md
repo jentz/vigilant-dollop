@@ -1,4 +1,10 @@
 # oidc-cli 🚀
+
+[![Go Report Card](https://goreportcard.com/badge/github.com/jentz/oidc-cli)](https://goreportcard.com/report/github.com/jentz/oidc-cli)
+[![GitHub release](https://img.shields.io/github/v/release/jentz/oidc-cli)](https://github.com/jentz/oidc-cli/releases)
+[![License](https://img.shields.io/github/license/jentz/oidc-cli)](https://github.com/jentz/oidc-cli/blob/main/LICENSE)
+![GitHub Downloads](https://img.shields.io/github/downloads/jentz/oidc-cli/total)
+
 Command-line OIDC client, get a token without all the fuss
 
 ## Usage 🛠️
