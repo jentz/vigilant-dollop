@@ -33,7 +33,7 @@ Run `oidc-cli <command> -h` to get help for a specific command
 * Installing with homebrew 🍺
 ```bash
  brew tap jentz/oidc-cli
- brew install oidc-cli
+ brew install --cask oidc-cli
  ```
 * Installing with scoop 🥄
 ```powershell
