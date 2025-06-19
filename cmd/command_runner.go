@@ -33,57 +33,36 @@ var commands = []Command{
 	{Name: "help", Help: "Prints help"},
 }
 
-func Usage() {
-	intro := `oidc-cli is a command-line OIDC client, get a token without all the fuss
-
-Usage:
-  oidc-cli [flags] <command> [command-flags]`
-
-	log.Outputln(intro)
-	log.Outputln("\nCommands:")
-	for _, command := range commands {
-		log.Outputf("  %-18s: %s\n", command.Name, command.Help)
-	}
-
-	log.Outputln("\nFlags:")
-	// Prints a help string for each flag we defined earlier using
-	// flag.BoolVar (and related functions)
-	flag.PrintDefaults()
-
-	log.Outputln()
-	log.Outputf("Run `oidc-cli <command> -h` to get help for a specific command\n\n")
-}
-
-func RunCommand(name string, args []string, globalConf *oidc.Config) {
+func RunCommand(name string, args []string, globalConf *oidc.Config, logger *log.Logger) int {
 	cmdIdx := slices.IndexFunc(commands, func(cmd Command) bool {
 		return cmd.Name == name
 	})
 
 	if cmdIdx < 0 {
-		log.Errorf("command \"%s\" not found\n\n", name)
+		logger.Errorf("command \"%s\" not found\n\n", name)
 		flag.Usage()
-		os.Exit(1)
+		return ExitError
 	}
 
 	cmd := commands[cmdIdx]
 	if cmd.Name == "help" {
 		flag.Usage()
-		os.Exit(0)
+		return ExitOK
 	}
 
 	if cmd.Name == "version" {
-		log.Outputln("oidc-cli version:", oidc.Version)
-		os.Exit(0)
+		logger.Outputln("oidc-cli version:", oidc.Version)
+		return ExitOK
 	}
 
 	command, output, err := cmd.Configure(name, args, globalConf)
 	if errors.Is(err, flag.ErrHelp) {
-		log.Errorf("error: %v\n", output)
-		os.Exit(2)
+		logger.Errorf("error: %v\n", output)
+		return ExitHelp
 	} else if err != nil {
-		log.Errorln("got error:", err)
-		log.Errorln("output:\n", output)
-		os.Exit(1)
+		logger.Errorln("got error:", err)
+		logger.Errorln("output:\n", output)
+		return ExitError
 	}
 
 	signalChan := make(chan os.Signal, 1)
@@ -100,27 +79,28 @@ func RunCommand(name string, args []string, globalConf *oidc.Config) {
 	// handle signals
 	go func() {
 		sig := <-signalChan
-		log.Errorf("\nreceived signal: %s, cancelling...\n", sig)
+		logger.Errorf("\nreceived signal: %s, cancelling...\n", sig)
 		cancel()
 	}()
 
-	// In main.go or cmd.RunCommand
 	if err := prepareOIDCConfig(ctx, globalConf); err != nil {
-		log.Errorln("configuration error:", err)
-		os.Exit(1)
+		logger.Errorln("configuration error:", err)
+		return ExitError
 	}
 
 	if err := command.Run(ctx); err != nil {
 		if errors.Is(err, context.Canceled) {
-			log.Errorln("operation cancelled")
-			os.Exit(0)
+			logger.Errorln("operation cancelled")
+			return ExitOK
 		} else if errors.Is(err, context.DeadlineExceeded) {
-			log.Errorln("operation timed out")
-			os.Exit(1)
+			logger.Errorln("operation timed out")
+			return ExitError
 		}
-		log.Errorf("error: %v\n", err.Error())
-		os.Exit(1)
+		logger.Errorf("error: %v\n", err.Error())
+		return ExitError
 	}
+
+	return ExitOK
 }
 
 func prepareOIDCConfig(ctx context.Context, conf *oidc.Config) error {
