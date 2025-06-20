@@ -18,6 +18,7 @@ type AuthorizationCodeFlow struct {
 type AuthorizationCodeFlowConfig struct {
 	Scopes      string
 	CallbackURI string
+	RedirectURI string
 	Prompt      string
 	AcrValues   string
 	LoginHint   string
@@ -48,7 +49,7 @@ func (c *AuthorizationCodeFlow) createAuthCodeRequest(ctx context.Context, codeV
 	req := &httpclient.AuthorizationCodeRequest{
 		ClientID:    c.Config.ClientID,
 		Scope:       c.FlowConfig.Scopes,
-		RedirectURI: c.FlowConfig.CallbackURI,
+		RedirectURI: c.FlowConfig.RedirectURI,
 		Prompt:      c.FlowConfig.Prompt,
 		AcrValues:   c.FlowConfig.AcrValues,
 		LoginHint:   c.FlowConfig.LoginHint,
@@ -56,6 +57,10 @@ func (c *AuthorizationCodeFlow) createAuthCodeRequest(ctx context.Context, codeV
 		UILocales:   c.FlowConfig.UILocales,
 		State:       c.FlowConfig.State,
 		CustomArgs:  c.FlowConfig.CustomArgs,
+	}
+	// If the user has not explicitly set a redirect URI, use the callback URI
+	if c.FlowConfig.RedirectURI == "" {
+		req.RedirectURI = c.FlowConfig.CallbackURI
 	}
 	if codeVerifier != "" {
 		req.CodeChallenge = crypto.GeneratePKCECodeChallenge(codeVerifier)

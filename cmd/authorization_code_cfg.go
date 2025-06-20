@@ -37,7 +37,9 @@ func parseAuthorizationCodeFlags(name string, args []string, oidcConf *oidc.Conf
 
 	var flowConf oidc.AuthorizationCodeFlowConfig
 	flags.StringVar(&flowConf.Scopes, "scopes", "openid", "set scopes as a space separated list")
-	flags.StringVar(&flowConf.CallbackURI, "callback-uri", "http://localhost:9555/callback", "set OIDC redirect uri")
+	flags.StringVar(&flowConf.CallbackURI, "callback-uri", "http://localhost:9555/callback",
+		"set callback uri (default: http://localhost:9555/callback), this will also be used as the redirect_uri in the authorization request unless overridden by -redirect-uri")
+	flags.StringVar(&flowConf.RedirectURI, "redirect-uri", "", "set the redirect_uri parameter")
 	flags.StringVar(&flowConf.Prompt, "prompt", "", "set prompt parameter to login, consent, select_account, or none")
 	flags.StringVar(&flowConf.AcrValues, "acr-values", "", "set acr_values parameter")
 	flags.StringVar(&flowConf.LoginHint, "login-hint", "", "set login_hint parameter")
