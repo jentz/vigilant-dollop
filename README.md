@@ -7,6 +7,8 @@
 
 Command-line OIDC client, get a token without all the fuss
 
+![Demo GIF](docs/static/oidc-cli-usage.gif)
+
 ## Usage 🛠️
 
 ```bash
