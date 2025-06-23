@@ -24,7 +24,7 @@ go.work
 .vscode
 
 # the executable
-oidc-cli*
+/oidc-cli*
 
 # goreleaser dist directory
 dist/
@@ -34,3 +34,5 @@ dist/
 
 # local tmp
 tmp/
+
+.DS_Store
