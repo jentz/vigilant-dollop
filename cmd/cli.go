@@ -43,10 +43,10 @@ func CLI(args []string, logOptions ...log.Option) int {
 }
 
 func usage(logger *log.Logger) {
-	intro := `oidc-cli is a command-line OIDC client, get a token without all the fuss
+	intro := `oidc-cli: is a command-line OIDC client
 
 Usage:
-  oidc-cli [flags] <command> [command-flags]`
+  oidc-cli [global-flags] <command> [command-flags]`
 
 	logger.Outputln(intro)
 	logger.Outputln("\nCommands:")
