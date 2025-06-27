@@ -25,12 +25,12 @@ type Command struct {
 }
 
 var commands = []Command{
-	{Name: "authorization_code", Help: "Uses the authorization code flow to get a token response", Configure: parseAuthorizationCodeFlags},
-	{Name: "client_credentials", Help: "Uses the client credentials flow to get a token response", Configure: parseClientCredentialsFlags},
-	{Name: "introspect", Help: "Uses the introspection flow to validate a token and fetch the associated claims", Configure: parseIntrospectFlags},
-	{Name: "token_refresh", Help: "Uses the token refresh flow to exchange a refresh token and obtain new tokens", Configure: parseTokenRefreshFlags},
-	{Name: "version", Help: "Prints the version of oidc-cli"},
-	{Name: "help", Help: "Prints help"},
+	{Name: "authorization_code", Help: "Use the Authorization Code flow to obtain tokens.", Configure: parseAuthorizationCodeFlags},
+	{Name: "client_credentials", Help: "Use the Client Credentials flow to obtain tokens.", Configure: parseClientCredentialsFlags},
+	{Name: "introspect", Help: "Validate a token and retrieve associated claims.", Configure: parseIntrospectFlags},
+	{Name: "token_refresh", Help: "Exchange a refresh token for new tokens.", Configure: parseTokenRefreshFlags},
+	{Name: "version", Help: "Display the current version of oidc-cli."},
+	{Name: "help", Help: "Show help for oidc-cli or a specific command."},
 }
 
 func RunCommand(name string, args []string, globalConf *oidc.Config, logger *log.Logger) int {
